@@ -1,0 +1,101 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #FCF4E9; /* tom bege claro */
+}
+
+.login-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* Lado esquerdo */
+.login-left {
+    flex: 1;
+    background-color: #E4D0B1; /* bege mais forte */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px;
+}
+
+.login-left .logo {
+    width: 400px;
+    height: auto; /* mantém proporção */
+    margin-bottom: 20px;
+}
+
+
+.login-left h1 {
+    color: #162745;
+    margin-bottom: 10px;
+}
+
+.login-left .frase {
+    color: #2A587D;
+    font-style: italic;
+}
+
+/* Lado direito */
+.login-right {
+    flex: 1;
+    background-color: #2A587D; /* azul */
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px;
+}
+
+.login-right h2 {
+    margin-bottom: 20px;
+    font-size: 1.5em;
+}
+
+.login-right form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.login-right label {
+    font-weight: bold;
+}
+
+.login-right input {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+}
+
+.login-right button {
+    background-color: #B89764; /* dourado */
+    color: #162745;
+    font-weight: bold;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.login-right button:hover {
+    background-color: #FCF4E9;
+}
+
+.login-right .links {
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.login-right .links a {
+    color: #FCF4E9;
+    font-size: 0.9em;
+    text-decoration: none;
+}
+
+.login-right .links a:hover {
+    text-decoration: underline;
+}

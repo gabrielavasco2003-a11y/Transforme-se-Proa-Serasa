@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Spoiler Esperado</title>
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+    <main class="login-container">
+        <!-- Lado esquerdo com logo -->
+        <section class="login-left">
+            <img src="img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado" class="logo">
+        </section>
+
+        <!-- Lado direito com formulário -->
+        <section class="login-right">
+            <h2>LOGIN</h2>
+            <form id="loginForm">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" placeholder="Digite seu e-mail" required>
+
+                <label for="senha">Senha</label>
+                <input type="password" id="senha" placeholder="Digite sua senha" required>
+
+                <button type="submit">Entrar</button>
+
+                <div class="links">
+                    <a href="#">Esqueceu a senha?</a>
+                    <a href="#">Não tem cadastro?</a>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <script src="login.js"></script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+/* Reset */
+body, h1, h2, p, ul, li {
+    margin: 0;
+    padding: 0;
+}
+
+/* Fonte Verdana */
+body {
+    font-family: Verdana, sans-serif;
+    background-color: #FCF4E9; /* off-white da paleta */
+    color: #162745; /* navy escuro para texto */
+}
+
+/* Cabeçalho */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #C09E68; 
+    color: #fff;
+    padding: 10px 20px;
+    position: relative; /* necessário para posicionar o user-menu */
+}
+
+/* Logo */
+#logo img {
+    width: 150px;
+    height: auto;
+}
+
+/* Busca centralizada */
+#search {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+#search input {
+    padding: 6px;
+    width: 280px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+#search button {
+    padding: 6px 12px;
+    cursor: pointer;
+    background-color: #B89764; /* dourado */
+    border: none;
+    color: #fff;
+    border-radius: 5px;
+}
+
+/* Navegação */
+nav ul { 
+    list-style: none; 
+    display: flex; 
+    gap: 15px; 
+}
+nav a { 
+    text-decoration: none; 
+    color: #FCF4E9; 
+    font-weight: bold; 
+}
+
+/* --- Menu do usuário --- */
+#user-menu {
+    position: relative;
+    margin-left: 20px;
+}
+
+#avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #333;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Dropdown */
+#dropdown {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px 0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    width: 200px;
+    z-index: 100;
+}
+
+#dropdown ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+#dropdown li {
+    padding: 10px 15px;
+    transition: background 0.2s ease;
+}
+
+#dropdown li:hover {
+    background-color: #f0f0f0;
+}
+
+#dropdown a {
+    text-decoration: none;
+    color: #162745;
+    font-weight: bold;
+    display: block;
+}
+
+/* Oculto por padrão */
+.hidden {
+    display: none;
+}
+
+/* Banner */
+#banner { 
+    background-color: #E4D0B1; 
+    padding: 40px 20px; 
+}
+
+.banner-content { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 30px; 
+}
+
+/* Logo */
+.banner-logo img { 
+    height: 120px; 
+    width: auto;
+}
+
+/* Mascote */
+.banner-mascote img { 
+    height: 200px; 
+}
+
+/* Seções de livros */
+.livros-section { 
+    position: relative; 
+    margin: 30px 20px; 
+}
+
+.livros-section h2 {
+    margin-bottom: 15px;
+    border-bottom: 2px solid #B89764;
+    padding-bottom: 5px;
+    color: #162745;
+}
+
+.livros {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 10px 0;
+}
+
+.livros article {
+    background-color: #fff;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    width: 180px;
+    flex: 0 0 auto;
+    transition: transform 0.2s ease;
+}
+
+.livros article:hover { 
+    transform: scale(1.05); 
+}
+
+.livros img { 
+    width: 100%; 
+    height: 220px; 
+    object-fit: cover; 
+    border-radius: 6px; 
+    margin-bottom: 8px; 
+}
+
+.titulo { 
+    font-weight: bold; 
+    margin-bottom: 5px; 
+    color: #2A587D; 
+    font-size: 0.9em;
+    line-height: 1.2em;
+    max-height: 2.4em;
+    overflow: hidden;
+}
+
+/* Estrelas */
+.estrelas { 
+    font-size: 1.2em;
+    color: #FFD700; 
+    margin-bottom: 4px;
+}
+
+/* Setas */
+.arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #162745;
+    color: #FCF4E9;
+    border: none;
+    font-size: 2em;
+    cursor: pointer;
+    padding: 5px 10px;
+}
+.arrow.left { left: -10px; }
+.arrow.right { right: -10px; }
+
+/* Rodapé */
+footer {
+    background-color: #C09E68;
+    color: #FCF4E9;
+    text-align: center;
+    padding: 20px;
+}
+#logo-footer img { height: 40px; }
+footer ul { list-style: none; display: flex; justify-content: center; gap: 20px; margin-top: 10px; }
+footer a { color: #FCF4E9; text-decoration: none; }
