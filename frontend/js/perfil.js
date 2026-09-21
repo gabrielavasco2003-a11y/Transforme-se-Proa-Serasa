@@ -20,7 +20,8 @@ document.getElementById('excluir-conta').addEventListener('click', async () => {
     const confirmar = confirm("Tem certeza que deseja excluir sua conta?");
     if (confirmar && usuarioLogado) {
         try {
-            const response = await fetch("http://localhost:3000/api/excluir", {
+            // ✅ URL atualizada para o backend no Render
+            const response = await fetch("https://spoiler-esperado.onrender.com/api/excluir", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: usuarioLogado.email })

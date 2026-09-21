@@ -6,7 +6,8 @@ document.getElementById("completarForm").addEventListener("submit", async functi
   const senha = document.querySelector("[name='senha']").value;
 
   try {
-    const response = await fetch("http://localhost:3000/api/completar", {
+    // ✅ URL atualizada para o backend no Render
+    const response = await fetch("https://spoiler-esperado.onrender.com/api/completar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ telefone, nascimento, senhaHash: senha })

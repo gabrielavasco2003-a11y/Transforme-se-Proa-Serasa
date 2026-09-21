@@ -107,7 +107,7 @@ app.delete('/api/excluir', async (req, res) => {
 passport.use(new GoogleStrategy({
   clientID: "1000985376031-mki0ocspop293jadrvd3lmhdnnoo687t.apps.googleusercontent.com",
   clientSecret: "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",
-  callbackURL: "http://localhost:3000/api/google/callback"
+  callbackURL: "https://spoiler-esperado.onrender.com/api/google/callback" // Atualizado para o Render
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     let usuario = await User.findOne({ googleId: profile.id });
@@ -174,4 +174,6 @@ app.post('/api/completar', async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log('Servidor rodando na porta 3000'));
+// ✅ Porta ajustada para o Render e uso local
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));

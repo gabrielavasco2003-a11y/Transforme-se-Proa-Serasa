@@ -11,7 +11,6 @@ document.getElementById("cadastroForm").addEventListener("submit", async functio
     const telefone = document.querySelector("[name='telefone']").value;
     const nascimento = document.querySelector("[name='nascimento']").value;
 
-    // Validações básicas
     if (email !== confirmarEmail) {
         alert("Os e-mails não coincidem!");
         return;
@@ -21,16 +20,16 @@ document.getElementById("cadastroForm").addEventListener("submit", async functio
         return;
     }
 
-    // Enviar para o backend
     try {
-        const response = await fetch("http://localhost:3000/api/cadastro", {
+        // ✅ URL alterada para o Render
+        const response = await fetch("https://spoiler-esperado.onrender.com/api/cadastro", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 nome,
                 usuario,
                 email,
-                senhaHash: senha, // depois vamos aplicar hash
+                senhaHash: senha,
                 telefone,
                 nascimento
             })
@@ -50,6 +49,6 @@ document.getElementById("cadastroForm").addEventListener("submit", async functio
 
 // Login com Google
 function loginGoogle() {
-    // Redireciona para a rota do backend que inicia o OAuth
-    window.location.href = "http://localhost:3000/api/google";
+    // ✅ URL alterada para o Render
+    window.location.href = "https://spoiler-esperado.onrender.com/api/google";
 }
