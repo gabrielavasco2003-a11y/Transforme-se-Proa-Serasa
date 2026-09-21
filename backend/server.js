@@ -10,11 +10,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ CORREÇÃO AQUI: Mapeia as pastas do frontend para ficarem acessíveis na raiz do servidor
+// Servir arquivos estáticos (CSS, JS, Imagens)
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use(express.static(path.join(__dirname, '../frontend/html')));
 
-// Rota raiz para abrir a página principal (opcional, ajustada para a estrutura)
+// 🎯 ROTAS EXPLÍCITAS PARA SERVIR CADA PÁGINA HTML (Evita erro de 'Não foi possível obter')
+app.get('/completar.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/html/completar.html'));
+});
+
+app.get('/perfil.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/html/perfil.html'));
+});
+
+app.get('/index.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/html/index.html'));
+});
+
+// Rota raiz para abrir a página principal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/html/index.html'));
 });
