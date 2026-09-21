@@ -10,7 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Servir arquivos estáticos direto da pasta Projeto
+// Servir arquivos estáticos da pasta anterior
 app.use(express.static(path.join(__dirname, '..')));
 
 // Sessão para login com Google
@@ -37,7 +37,7 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', UserSchema);
 
-// ✅ Cadastro normal
+// Cadastro normal
 app.post('/api/cadastro', async (req, res) => {
   try {
     const novoUsuario = new User(req.body);
@@ -48,7 +48,7 @@ app.post('/api/cadastro', async (req, res) => {
   }
 });
 
-// ✅ Login normal
+// Login normal
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
 
@@ -69,7 +69,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ✅ Perfil
+// Perfil
 app.get('/api/perfil/:email', async (req, res) => {
   const { email } = req.params;
 
@@ -86,7 +86,7 @@ app.get('/api/perfil/:email', async (req, res) => {
   }
 });
 
-// ✅ Exclusão de conta
+// Exclusão de conta
 app.delete('/api/excluir', async (req, res) => {
   const { email } = req.body;
 
@@ -103,11 +103,14 @@ app.delete('/api/excluir', async (req, res) => {
   }
 });
 
-// ✅ Login com Google
+// ✅ Identifica automaticamente se está no Render ou no Localhost
+const BASE_URL = process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
+
+// Configuração do Google Strategy
 passport.use(new GoogleStrategy({
   clientID: "1000985376031-mki0ocspop293jadrvd3lmhdnnoo687t.apps.googleusercontent.com",
   clientSecret: "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",
-  callbackURL: "https://spoiler-esperado.onrender.com/api/google/callback" // Atualizado para o Render
+  callbackURL: `${BASE_URL}/api/google/callback`
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     let usuario = await User.findOne({ googleId: profile.id });
@@ -143,7 +146,6 @@ app.get('/api/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
   async (req, res) => {
     const usuario = req.user;
-    // se for novo, redireciona para completar cadastro
     if (!usuario.telefone || !usuario.nascimento || !usuario.senhaHash) {
       return res.redirect('/completar.html');
     }
@@ -151,7 +153,7 @@ app.get('/api/google/callback',
   }
 );
 
-// ✅ Completar cadastro após login com Google
+// Completar cadastro após login com Google
 app.post('/api/completar', async (req, res) => {
   const { telefone, nascimento, senhaHash } = req.body;
 
@@ -174,6 +176,6 @@ app.post('/api/completar', async (req, res) => {
   }
 });
 
-// ✅ Porta ajustada para o Render e uso local
+// Porta dinâmica
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
