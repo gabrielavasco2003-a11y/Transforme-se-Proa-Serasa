@@ -5,35 +5,54 @@ const session = require('express-session');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🎯 MAPEAMENTO DE CAMINHOS ABSOLUTOS
-const FRONTEND_PATH = path.resolve(__dirname, '../frontend');
-const HTML_PATH = path.resolve(__dirname, '../frontend/html');
+// 🎯 DIAGNÓSTICO E MAPEAMENTO DE CAMINHOS ROBUSTOS
+const ROOT_DIR = process.cwd();
+
+// Tenta localizar a pasta do frontend independentemente de onde o Node foi iniciado
+const possibleFrontendPaths = [
+  path.resolve(ROOT_DIR, 'frontend'),
+  path.resolve(__dirname, '../frontend'),
+  path.resolve(__dirname, 'frontend')
+];
+
+let FRONTEND_PATH = possibleFrontendPaths.find(p => fs.existsSync(p)) || possibleFrontendPaths[0];
+let HTML_PATH = path.join(FRONTEND_PATH, 'html');
+
+console.log('--- RESOLUÇÃO DE CAMINHOS ---');
+console.log('Pasta Frontend localiza em:', FRONTEND_PATH);
+console.log('Pasta HTML localizada em:', HTML_PATH);
 
 // Servir arquivos estáticos (CSS, JS, Imagens)
 app.use(express.static(FRONTEND_PATH));
 app.use(express.static(HTML_PATH));
 
-// 🎯 ROTAS EXPLÍCITAS DE PÁGINAS HTML (Carregamento garantido)
-app.get('/completar.html', (req, res) => {
-  res.sendFile(path.join(HTML_PATH, 'completar.html'));
-});
+// Função auxiliar para envio seguro de HTML
+const sendHtmlFile = (fileName, res) => {
+  const primaryPath = path.join(HTML_PATH, fileName);
+  if (fs.existsSync(primaryPath)) {
+    return res.sendFile(primaryPath);
+  }
+  
+  // Fallback de segurança procurando em alternativas comuns de diretório
+  const fallbackPath = path.resolve(ROOT_DIR, 'frontend/html', fileName);
+  if (fs.existsSync(fallbackPath)) {
+    return res.sendFile(fallbackPath);
+  }
 
-app.get('/perfil.html', (req, res) => {
-  res.sendFile(path.join(HTML_PATH, 'perfil.html'));
-});
+  res.status(404).send(`Não foi possível obter /${fileName}`);
+};
 
-app.get('/index.html', (req, res) => {
-  res.sendFile(path.join(HTML_PATH, 'index.html'));
-});
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(HTML_PATH, 'index.html'));
-});
+// 🎯 ROTAS EXPLÍCITAS DE PÁGINAS HTML
+app.get('/completar.html', (req, res) => sendHtmlFile('completar.html', res));
+app.get('/perfil.html', (req, res) => sendHtmlFile('perfil.html', res));
+app.get('/index.html', (req, res) => sendHtmlFile('index.html', res));
+app.get('/', (req, res) => sendHtmlFile('index.html', res));
 
 // Sessão para login com Google
 app.use(session({ secret: 'segredo', resave: false, saveUninitialized: true }));
