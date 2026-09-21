@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Spoiler Esperado</title>
+    <!-- CSS correto -->
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header>
+    <!-- Logo -->
+    <div id="logo">
+        <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
+    </div>
+
+    <!-- Busca centralizada -->
+    <div id="search">
+        <form>
+            <input type="text" placeholder="Insira palavras-chave">
+            <button type="submit">Pesquisar</button>
+        </form>
+    </div>
+
+    <!-- Nav com Cadastro/Login -->
+    <nav>
+        <ul>
+            <li><a href="cadastro.html">Cadastro</a></li>
+            <li><a href="login.html">Login</a></li>
+        </ul>
+    </nav>
+
+    <!-- Menu do usuário (aparece só após login) -->
+    <div id="user-menu" style="display: none;">
+        <div id="avatar"></div>
+        <div id="dropdown" class="hidden">
+            <ul>
+                <li><a href="editar-perfil.html">Editar Perfil</a></li>
+                <li><a href="estante.html">Minha Biblioteca</a></li>
+                <li><a href="cadastrar-livros.html">Cadastrar Livros</a></li>
+                <li><a href="configuracoes.html">Configurações</a></li>
+                <li><a href="#" id="logout">Logout</a></li>
+            </ul>
+        </div>
+    </div>
+</header>
+
+<section id="banner">
+    <div class="banner-content">
+        <div class="banner-logo">
+            <img src="/../img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
+            <br><br>
+            <p>Descubra histórias, conecte-se.</p>
+        </div>
+        <div class="banner-mascote">
+            <img src="../../img/mascote/Mascote_EmPe.png" alt="Mascote Spoiler Esperado">
+        </div>
+    </div>
+</section>
+
+<main>
+    <!-- Seção Em Alta -->
+    <section class="livros-section">
+        <h2>Em Alta</h2>
+        <button class="arrow left">&#10094;</button>
+        <div class="livros">
+            <article>
+                <img src="" alt="">
+                <p class="titulo">Título</p>
+            </article>
+        </div>
+        <button class="arrow right">&#10095;</button>
+    </section>
+
+    <!-- Seção Prêmio Jabuti -->
+    <section class="livros-section">
+        <h2>Prêmio Jabuti</h2>
+        <button class="arrow left">&#10094;</button>
+        <div class="livros">
+            <article>
+                <img src="" alt="">
+                <p class="titulo">Título</p>
+                <p class="estrelas">★★★★☆</p>
+            </article>
+        </div>
+        <button class="arrow right">&#10095;</button>
+    </section>
+
+    <!-- Seção Novos -->
+    <section class="livros-section">
+        <h2>Novos</h2>
+        <button class="arrow left">&#10094;</button>
+        <div class="livros">
+            <article>
+                <img src="" alt="">
+                <p class="titulo">Título</p>
+            </article>
+        </div>
+        <button class="arrow right">&#10095;</button>
+    </section>
+</main>
+
+<footer>
+    <div id="logo-footer">
+        <img src="../../img/logo/Logo.svg" alt="Logo Spoiler Esperado">
+    </div>
+    <ul>
+        <li><a href="#">Quem somos</a></li>
+        <li><a href="#">Política de privacidade</a></li>
+        <li><a href="#">Fale conosco</a></li>
+    </ul>
+</footer>
+
+<!-- JS correto -->
+<script src="../js/script.js"></script>
+</body>
+</html>

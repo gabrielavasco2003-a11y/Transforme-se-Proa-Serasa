@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Completar Cadastro</title>
+  <!-- CSS correto -->
+  <link rel="stylesheet" href="../css/completar.css">
+</head>
+<body>
+  <div class="completar-container">
+    
+    <!-- Lado esquerdo -->
+    <div class="completar-left">
+      <!-- Imagem está em Projeto/img -->
+      <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado" class="logo">
+      <h2>Bem-vindo!</h2>
+      <p>Complete seu cadastro para acessar todos os recursos da nossa biblioteca fórum.</p>
+    </div>
+
+    <!-- Lado direito -->
+    <div class="completar-right">
+      <form id="completarForm">
+        <h3>Complete seu cadastro</h3>
+
+        <label for="telefone">Telefone:</label>
+        <input type="text" id="telefone" name="telefone" required>
+
+        <label for="nascimento">Data de nascimento:</label>
+        <input type="date" id="nascimento" name="nascimento" required>
+
+        <label for="senha">Defina uma senha:</label>
+        <input type="password" id="senha" name="senha" required>
+
+        <button type="submit">Salvar</button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- JS correto -->
+  <script src="../js/completar.js"></script>
+</body>
+</html>
