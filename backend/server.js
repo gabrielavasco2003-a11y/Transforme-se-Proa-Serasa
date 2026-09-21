@@ -15,9 +15,10 @@ app.use(express.json());
 // 🎯 DIAGNÓSTICO E MAPEAMENTO DE CAMINHOS ROBUSTOS
 const ROOT_DIR = process.cwd();
 
-// Tenta localizar a pasta do frontend independentemente de onde o Node foi iniciado
+// Tenta localizar a pasta do frontend independentemente do diretório de início
 const possibleFrontendPaths = [
   path.resolve(ROOT_DIR, 'frontend'),
+  path.resolve(ROOT_DIR, '../frontend'),
   path.resolve(__dirname, '../frontend'),
   path.resolve(__dirname, 'frontend')
 ];
@@ -26,6 +27,7 @@ let FRONTEND_PATH = possibleFrontendPaths.find(p => fs.existsSync(p)) || possibl
 let HTML_PATH = path.join(FRONTEND_PATH, 'html');
 
 console.log('--- RESOLUÇÃO DE CAMINHOS ---');
+console.log('Pasta Raiz:', ROOT_DIR);
 console.log('Pasta Frontend localizada em:', FRONTEND_PATH);
 console.log('Pasta HTML localizada em:', HTML_PATH);
 
@@ -33,17 +35,22 @@ console.log('Pasta HTML localizada em:', HTML_PATH);
 app.use(express.static(FRONTEND_PATH));
 app.use(express.static(HTML_PATH));
 
-// Função auxiliar para envio seguro de HTML
+// Função auxiliar para envio seguro de HTML com múltiplos fallbacks
 const sendHtmlFile = (fileName, res) => {
   const primaryPath = path.join(HTML_PATH, fileName);
   if (fs.existsSync(primaryPath)) {
     return res.sendFile(primaryPath);
   }
   
-  // Fallback de segurança procurando em alternativas comuns de diretório
-  const fallbackPath = path.resolve(ROOT_DIR, 'frontend/html', fileName);
-  if (fs.existsSync(fallbackPath)) {
-    return res.sendFile(fallbackPath);
+  // Fallbacks de segurança procurando em alternativas comuns de diretório
+  const altPath1 = path.resolve(ROOT_DIR, 'frontend/html', fileName);
+  if (fs.existsSync(altPath1)) {
+    return res.sendFile(altPath1);
+  }
+
+  const altPath2 = path.resolve(__dirname, '../frontend/html', fileName);
+  if (fs.existsSync(altPath2)) {
+    return res.sendFile(altPath2);
   }
 
   res.status(404).send(`Não foi possível obter /${fileName}`);
@@ -57,7 +64,7 @@ app.get('/', (req, res) => sendHtmlFile('index.html', res));
 
 const MONGO_URI = 'mongodb+srv://spoileresperado_db_user:FtwEXDbuJpWc9sdp@cluster0.r4zyhor.mongodb.net/spoilerEsperadoDB';
 
-// 🎯 SESSÃO PERSISTENTE NO MONGODB ATLAS (Remove o aviso do MemoryStore)
+// 🎯 SESSÃO PERSISTENTE NO MONGODB ATLAS
 app.use(session({
   secret: 'segredo',
   resave: false,
