@@ -10,26 +10,29 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Servir arquivos estáticos (CSS, JS, Imagens)
-app.use(express.static(path.join(__dirname, '../frontend')));
-app.use(express.static(path.join(__dirname, '../frontend/html')));
+// 🎯 MAPEAMENTO DE CAMINHOS ABSOLUTOS
+const FRONTEND_PATH = path.resolve(__dirname, '../frontend');
+const HTML_PATH = path.resolve(__dirname, '../frontend/html');
 
-// 🎯 ROTAS EXPLÍCITAS PARA SERVIR CADA PÁGINA HTML (Evita erro de 'Não foi possível obter')
+// Servir arquivos estáticos (CSS, JS, Imagens)
+app.use(express.static(FRONTEND_PATH));
+app.use(express.static(HTML_PATH));
+
+// 🎯 ROTAS EXPLÍCITAS DE PÁGINAS HTML (Carregamento garantido)
 app.get('/completar.html', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/html/completar.html'));
+  res.sendFile(path.join(HTML_PATH, 'completar.html'));
 });
 
 app.get('/perfil.html', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/html/perfil.html'));
+  res.sendFile(path.join(HTML_PATH, 'perfil.html'));
 });
 
 app.get('/index.html', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/html/index.html'));
+  res.sendFile(path.join(HTML_PATH, 'index.html'));
 });
 
-// Rota raiz para abrir a página principal
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/html/index.html'));
+  res.sendFile(path.join(HTML_PATH, 'index.html'));
 });
 
 // Sessão para login com Google
@@ -159,16 +162,21 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// Rotas Google
+// Rotas Google com salvamento de sessão explícito
 app.get('/api/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 app.get('/api/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
-  async (req, res) => {
-    const usuario = req.user;
-    if (!usuario.telefone || !usuario.nascimento || !usuario.senhaHash) {
-      return res.redirect('/completar.html');
-    }
-    res.redirect('/perfil.html');
+  (req, res) => {
+    req.session.save((err) => {
+      if (err) {
+        return res.redirect('/');
+      }
+      const usuario = req.user;
+      if (!usuario.telefone || !usuario.nascimento || !usuario.senhaHash) {
+        return res.redirect('/completar.html');
+      }
+      res.redirect('/perfil.html');
+    });
   }
 );
 
