@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const path = require('path');
@@ -25,7 +26,7 @@ let FRONTEND_PATH = possibleFrontendPaths.find(p => fs.existsSync(p)) || possibl
 let HTML_PATH = path.join(FRONTEND_PATH, 'html');
 
 console.log('--- RESOLUÇÃO DE CAMINHOS ---');
-console.log('Pasta Frontend localiza em:', FRONTEND_PATH);
+console.log('Pasta Frontend localizada em:', FRONTEND_PATH);
 console.log('Pasta HTML localizada em:', HTML_PATH);
 
 // Servir arquivos estáticos (CSS, JS, Imagens)
@@ -54,13 +55,25 @@ app.get('/perfil.html', (req, res) => sendHtmlFile('perfil.html', res));
 app.get('/index.html', (req, res) => sendHtmlFile('index.html', res));
 app.get('/', (req, res) => sendHtmlFile('index.html', res));
 
-// Sessão para login com Google
-app.use(session({ secret: 'segredo', resave: false, saveUninitialized: true }));
+const MONGO_URI = 'mongodb+srv://spoileresperado_db_user:FtwEXDbuJpWc9sdp@cluster0.r4zyhor.mongodb.net/spoilerEsperadoDB';
+
+// 🎯 SESSÃO PERSISTENTE NO MONGODB ATLAS (Remove o aviso do MemoryStore)
+app.use(session({
+  secret: 'segredo',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: MONGO_URI,
+    collectionName: 'sessions'
+  }),
+  cookie: { maxAge: 1000 * 60 * 60 * 24 } // Sessão válida por 24 horas
+}));
+
 app.use(passport.initialize());
 app.use(passport.session());
 
 // Conexão com MongoDB Atlas
-mongoose.connect('mongodb+srv://spoileresperado_db_user:FtwEXDbuJpWc9sdp@cluster0.r4zyhor.mongodb.net/spoilerEsperadoDB')
+mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB conectado'))
   .catch(err => console.error(err));
 
