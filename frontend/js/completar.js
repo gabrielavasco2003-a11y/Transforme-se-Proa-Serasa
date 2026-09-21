@@ -6,10 +6,11 @@ document.getElementById("completarForm").addEventListener("submit", async functi
   const senha = document.querySelector("[name='senha']").value;
 
   try {
-    // ✅ URL atualizada para o backend no Render
-    const response = await fetch("https://spoiler-esperado.onrender.com/api/completar", {
+    // ✅ Caminho relativo + envio de credenciais de sessão
+    const response = await fetch("/api/completar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include", // 👈 Essencial para manter o usuário logado via sessão
       body: JSON.stringify({ telefone, nascimento, senhaHash: senha })
     });
 
@@ -17,7 +18,7 @@ document.getElementById("completarForm").addEventListener("submit", async functi
     alert(data.mensagem);
 
     if (response.ok) {
-      window.location.href = "perfil.html";
+      window.location.href = "/perfil.html";
     }
   } catch (err) {
     console.error(err);

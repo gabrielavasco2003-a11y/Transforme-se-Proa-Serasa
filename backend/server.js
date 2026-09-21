@@ -10,8 +10,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Servir arquivos estáticos da pasta anterior
-app.use(express.static(path.join(__dirname, '..')));
+// ✅ CORREÇÃO AQUI: Mapeia as pastas do frontend para ficarem acessíveis na raiz do servidor
+app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../frontend/html')));
+
+// Rota raiz para abrir a página principal (opcional, ajustada para a estrutura)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/html/index.html'));
+});
 
 // Sessão para login com Google
 app.use(session({ secret: 'segredo', resave: false, saveUninitialized: true }));
@@ -158,6 +164,10 @@ app.post('/api/completar', async (req, res) => {
   const { telefone, nascimento, senhaHash } = req.body;
 
   try {
+    if (!req.user) {
+      return res.status(401).json({ mensagem: 'Usuário não autenticado!' });
+    }
+
     const usuario = await User.findById(req.user._id);
 
     if (!usuario) {
