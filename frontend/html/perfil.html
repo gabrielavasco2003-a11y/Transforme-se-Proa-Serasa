@@ -22,39 +22,29 @@
     </header>
 
     <main>
-        <section id="perfil">
-            <div class="perfil-header">
-                <div class="perfil-esquerda">
-                    <div id="avatar"></div>
-                    <h2>User_Name</h2>
-                </div>
-                <button id="editar-perfil">
-                    <a href="editar-perfil.html" class="btn">Editar perfil</a>
-                </button>
-            </div>
+<section id="perfil">
+    <div class="perfil-header">
+        <div class="perfil-esquerda">
+            <div id="avatar"></div>
+            <h2 id="nomePerfil">Carregando…</h2>
+        </div>
+        <button id="editar-perfil">
+            <a href="editar-perfil.html" class="btn">Editar perfil</a>
+        </button>
+    </div>
 
-            <div class="perfil-info">
-                <p><strong>Nome:</strong> </p>
-                <p><strong>Data de nascimento:</strong> </p>
-            </div>
+    <div class="perfil-info">
+        <p><strong>Nome:</strong> <span id="nomeCompletoPerfil">—</span></p>
+        <p><strong>E-mail:</strong> <span id="emailPerfil">—</span></p>
+        <p><strong>Usuário:</strong> <span id="usuarioPerfil">—</span></p>
+        <p><strong>Data de nascimento:</strong> <span id="nascimentoPerfil">—</span></p>
+    </div>
 
-            <div class="conquistas">
-                <h3>Conquistas</h3>
-                <div class="lista-conquistas">
-                    <!-- vazio por enquanto -->
-                </div>
-            </div>
-        </section>
-
-        <section id="estante">
-            <div class="estante-header">
-                <h2>Minha Estante</h2>
-                <button id="ver-mais">Ver mais</button>
-            </div>
-            <div class="livros">
-                <!-- vazio por enquanto -->
-            </div>
-        </section>
+    <div class="conquistas">
+        <h3>Conquistas</h3>
+        <div class="lista-conquistas"></div>
+    </div>
+</section>
     </main>
 
     <footer>
@@ -74,6 +64,8 @@
     </footer>
 
     <!-- JS correto -->
-    <script src="../js/perfil.js"></script>
+     <script src="../js/offline.js"></script>
+<script src="../js/perfil.js"></script>
+
 </body>
 </html>

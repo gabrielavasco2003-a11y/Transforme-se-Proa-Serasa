@@ -1,9 +1,21 @@
-### Criar Usuário no MongoDB
-POST https://spoiler-esperado.onrender.com/cadastro
+### Cadastro (produção)
+POST https://spoiler-esperado.onrender.com/api/cadastro
 Content-Type: application/json
 
 {
   "nome": "Gabriela",
+  "usuario": "gabi",
   "email": "teste@exemplo.com",
-  "senha": "123456"
+  "senhaHash": "123456",
+  "telefone": "11999999999",
+  "nascimento": "1995-08-20"
 }
+
+### Login
+POST https://spoiler-esperado.onrender.com/api/login
+Content-Type: application/json
+
+{ "email": "teste@exemplo.com", "senha": "123456" }
+
+### Ver sessão atual
+GET https://spoiler-esperado.onrender.com/api/me
