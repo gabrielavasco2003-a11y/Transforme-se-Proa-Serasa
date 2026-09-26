@@ -1,0 +1,72 @@
+[
+  {
+    "titulo": "O Ouvidor do Brasil: 99 Vezes Tom Jobim",
+    "autor": "Ruy Castro",
+    "capa": "/img/jabuti/ouvidor-do-brasil.jpg",
+    "estrelas": "★★★★★",
+    "categoria": "Livro do Ano 2025"
+  },
+  {
+    "titulo": "Vento em Setembro",
+    "autor": "Tony Bellotto",
+    "capa": "/img/jabuti/vento-em-setembro.jpg",
+    "estrelas": "★★★★★",
+    "categoria": "Romance Literário 2025"
+  },
+  {
+    "titulo": "Dores em Salva",
+    "autor": "Elimário Cardozo",
+    "capa": "/img/jabuti/dores-em-salva.jpg",
+    "estrelas": "★★★★★",
+    "categoria": "Conto 2025"
+  },
+  {
+    "titulo": "Estações",
+    "autor": "Daniel Munduruku e Marilda Castanha",
+    "capa": "/img/jabuti/estacoes.jpg",
+    "estrelas": "★★★★★",
+    "categoria": "Infantil 2025"
+  },
+  {
+    "titulo": "O Silêncio de Kazuki",
+    "autor": "André Kondo",
+    "capa": "/img/jabuti/silencio-de-kazuki.jpg",
+    "estrelas": "★★★★★",
+    "categoria": "Juvenil 2025"
+  },
+  {
+    "titulo": "As Fronteiras de Oline",
+    "autor": "Rafael Zoehler",
+    "capa": "/img/jabuti/fronteiras-de-oline.jpg",
+    "estrelas": "★★★★★",
+    "categoria": "Romance de Entretenimento 2025"
+  },
+  {
+    "titulo": "O Ninho",
+    "autor": "Bethânia Pires Amaro",
+    "capa": "/img/jabuti/o-ninho.jpg",
+    "estrelas": "★★★★★",
+    "categoria": "Conto 2024"
+  },
+  {
+    "titulo": "Salvar o Fogo",
+    "autor": "Itamar Vieira Junior",
+    "capa": "/img/jabuti/salvar-o-fogo.jpg",
+    "estrelas": "★★★★★",
+    "categoria": "Romance Literário 2024"
+  },
+  {
+    "titulo": "Sempre Paris: Crônica de uma Cidade",
+    "autor": "Rosa Freire D'Aguiar",
+    "capa": "/img/jabuti/sempre-paris.jpg",
+    "estrelas": "★★★★★",
+    "categoria": "Crônica 2024"
+  },
+  {
+    "titulo": "Como Pedra",
+    "autor": "Luckas Iohanathan",
+    "capa": "/img/jabuti/como-pedra.jpg",
+    "estrelas": "★★★★★",
+    "categoria": "Histórias em Quadrinhos 2024"
+  }
+]

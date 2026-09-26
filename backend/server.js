@@ -1,4 +1,4 @@
-require('dotenv').config();   // ← ADICIONADO: carrega .env
+require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -27,8 +27,17 @@ const possibleFrontendPaths = [
 ];
 const FRONTEND_PATH = possibleFrontendPaths.find(p => fs.existsSync(p)) || possibleFrontendPaths[0];
 const HTML_PATH = path.join(FRONTEND_PATH, 'html');
-const IMG_PATH  = path.resolve(FRONTEND_PATH, '..', 'img');
 const DATA_PATH = path.join(FRONTEND_PATH, 'data');
+
+// Descobre a pasta IMG real (tenta vários caminhos)
+const possibleImgPaths = [
+  path.resolve(FRONTEND_PATH, '..', 'img'),        // Projeto/img (padrão)
+  path.resolve(ROOT_DIR, 'img'),                   // se rodar da raiz
+  path.resolve(ROOT_DIR, '..', 'img'),             // se rodar de backend
+  path.resolve(__dirname, '..', 'img'),            // ../img
+  path.resolve(FRONTEND_PATH, 'img')               // Projeto/frontend/img
+];
+const IMG_PATH = possibleImgPaths.find(p => fs.existsSync(p)) || possibleImgPaths[0];
 
 console.log('--- RESOLUÇÃO DE CAMINHOS ---');
 console.log('ROOT     :', ROOT_DIR);
@@ -36,6 +45,7 @@ console.log('FRONTEND :', FRONTEND_PATH);
 console.log('HTML     :', HTML_PATH);
 console.log('IMG      :', IMG_PATH);
 console.log('DATA     :', DATA_PATH);
+console.log('IMG ok?  :', fs.existsSync(IMG_PATH));
 
 // ---------- HEADERS PARA SERVICE WORKER ----------
 app.use((req, res, next) => {
@@ -47,10 +57,21 @@ app.use((req, res, next) => {
 });
 
 // ---------- ESTÁTICOS ----------
+// Sempre monta as rotas — mesmo que a pasta não exista, o Express não quebra
 app.use(express.static(FRONTEND_PATH));
 if (fs.existsSync(HTML_PATH)) app.use(express.static(HTML_PATH));
-if (fs.existsSync(IMG_PATH))  app.use('/img', express.static(IMG_PATH));
-if (fs.existsSync(DATA_PATH)) app.use('/data', express.static(DATA_PATH));
+
+// /img — sempre monta, aponta pra pasta que existir
+app.use('/img', express.static(IMG_PATH));
+console.log('Servindo /img de:', IMG_PATH);
+
+// /data — sempre monta
+if (fs.existsSync(DATA_PATH)) {
+  app.use('/data', express.static(DATA_PATH));
+  console.log('Servindo /data de:', DATA_PATH);
+} else {
+  console.warn('AVISO: pasta DATA não encontrada em', DATA_PATH);
+}
 
 // ---------- SERVICE WORKER NA RAIZ ----------
 app.get('/sw.js', (req, res) => {
@@ -97,11 +118,9 @@ app.get('/perfil',            (req, res) => sendHtmlFile('perfil.html', res));
 app.get('/shelf.html',        (req, res) => sendHtmlFile('shelf.html', res));
 app.get('/shelf',             (req, res) => sendHtmlFile('shelf.html', res));
 
-// >>> NOVO: edit-shelf
 app.get('/edit-shelf.html',   (req, res) => sendHtmlFile('edit-shelf.html', res));
 app.get('/edit-shelf',        (req, res) => sendHtmlFile('edit-shelf.html', res));
 
-// Novas páginas de recuperação / validação
 app.get('/recuperar-email.html',  (req, res) => sendHtmlFile('recuperar-email.html', res));
 app.get('/recuperar-codigo.html', (req, res) => sendHtmlFile('recuperar-codigo.html', res));
 app.get('/recuperar-senha.html',  (req, res) => sendHtmlFile('recuperar-senha.html', res));
@@ -142,7 +161,6 @@ const UserSchema = new mongoose.Schema({
   telefoneVerificado: { type: Boolean, default: false },
   nascimento: Date,
   googleId: String,
-  // Mantido por compatibilidade — não é mais usado para leitura
   livros: [{
     volumeId: String,
     isbn: String,
@@ -162,11 +180,10 @@ const sanitize = (user) => {
   return u;
 };
 
-// ---------- MODELO: SHELF ITEM (NOVO) ----------
+// ---------- MODELO: SHELF ITEM ----------
 const ShelfItemSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   volumeId: { type: String, required: true, index: true },
-  // Dados do livro (snapshot, para não precisar ir no Google toda vez)
   title: String,
   authors: [String],
   thumbnail: String,
@@ -174,8 +191,7 @@ const ShelfItemSchema = new mongoose.Schema({
   categories: [String],
   description: String,
   isbn: String,
-  // Dados do usuário
-  status: { type: String, default: 'quero' }, // quero|lendo|terminei|pausei|desisti
+  status: { type: String, default: 'quero' },
   currentPage: { type: Number, default: null },
   currentChapter: { type: String, default: '' },
   reactions: { type: [String], default: [] },
@@ -184,9 +200,7 @@ const ShelfItemSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-// Garante que um usuário só tem 1 item por volumeId
 ShelfItemSchema.index({ userId: 1, volumeId: 1 }, { unique: true });
-
 const ShelfItem = mongoose.model('ShelfItem', ShelfItemSchema);
 
 // ---------- MODELO: BOOK SNAPSHOT ----------
@@ -589,7 +603,7 @@ app.get('/api/categories', (req, res) => {
   return res.json({});
 });
 
-// ---------- API: REACTIONS (NOVO) ----------
+// ---------- API: REACTIONS ----------
 app.get('/api/reactions', (req, res) => {
   const candidates = [
     path.join(FRONTEND_PATH, 'data', 'reactions.json'),
@@ -599,7 +613,6 @@ app.get('/api/reactions', (req, res) => {
   for (const p of candidates) {
     if (fs.existsSync(p)) return res.sendFile(p);
   }
-  // Fallback
   return res.json([
     { id: 'amei',       label: 'Amei',        emoji: '😍' },
     { id: 'quero-mais', label: 'Quero mais',  emoji: '⭐' },
@@ -610,6 +623,75 @@ app.get('/api/reactions', (req, res) => {
     { id: 'engracado',  label: 'Engraçado',   emoji: '😂' },
     { id: 'muito-ruim', label: 'Muito ruim',  emoji: '👎' }
   ]);
+});
+
+// ================================================================
+// ============ NOVAS ROTAS: GOOGLE BOOKS (proxy seguro) ==========
+// ================================================================
+app.get('/api/books/em-alta', async (req, res) => {
+  try {
+    const url = `${GOOGLE_BOOKS_BASE}?q=best+seller&maxResults=10&key=${GOOGLE_API_KEY}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const erro = await resp.text();
+      console.error('Google Books erro:', resp.status, erro);
+      return res.status(resp.status).json({ mensagem: 'Erro ao consultar Google Books.' });
+    }
+    const data = await resp.json();
+    return res.json({
+      totalItems: data.totalItems || 0,
+      items: (data.items || []).map(item => {
+        const info = item.volumeInfo || {};
+        return {
+          volumeId: item.id,
+          title: info.title || '',
+          authors: info.authors || [],
+          thumbnail: info.imageLinks?.thumbnail || '',
+          averageRating: info.averageRating || 0,
+          ratingsCount: info.ratingsCount || 0,
+          publishedDate: info.publishedDate || '',
+          categories: info.categories || [],
+          description: info.description || ''
+        };
+      })
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ mensagem: 'Erro ao buscar livros em alta.' });
+  }
+});
+
+app.get('/api/books/novos', async (req, res) => {
+  try {
+    const url = `${GOOGLE_BOOKS_BASE}?q=subject:fiction&orderBy=newest&maxResults=10&key=${GOOGLE_API_KEY}`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      const erro = await resp.text();
+      console.error('Google Books erro:', resp.status, erro);
+      return res.status(resp.status).json({ mensagem: 'Erro ao consultar Google Books.' });
+    }
+    const data = await resp.json();
+    return res.json({
+      totalItems: data.totalItems || 0,
+      items: (data.items || []).map(item => {
+        const info = item.volumeInfo || {};
+        return {
+          volumeId: item.id,
+          title: info.title || '',
+          authors: info.authors || [],
+          thumbnail: info.imageLinks?.thumbnail || '',
+          averageRating: info.averageRating || 0,
+          ratingsCount: info.ratingsCount || 0,
+          publishedDate: info.publishedDate || '',
+          categories: info.categories || [],
+          description: info.description || ''
+        };
+      })
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ mensagem: 'Erro ao buscar livros novos.' });
+  }
 });
 
 // ---------- API: BOOK DETAIL ----------
@@ -690,10 +772,8 @@ app.delete('/api/book/:volumeId/comment/:commentId', async (req, res) => {
 });
 
 // ================================================================
-// ============ ROTAS: SHELF (NOVO — usando ShelfItem) ============
+// ============ ROTAS: SHELF (usando ShelfItem) ===================
 // ================================================================
-
-// ---------- API: SHELF (listar) ----------
 app.get('/api/shelf', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
@@ -722,7 +802,6 @@ app.get('/api/shelf', async (req, res) => {
   }
 });
 
-// ---------- API: SHELF (item específico) ----------
 app.get('/api/shelf/item/:volumeId', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
@@ -736,14 +815,12 @@ app.get('/api/shelf/item/:volumeId', async (req, res) => {
   }
 });
 
-// ---------- API: SHELF (adicionar) ----------
 app.post('/api/shelf/add', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { volumeId } = req.body;
     if (!volumeId) return res.status(400).json({ mensagem: 'volumeId obrigatório.' });
 
-    // Garante snapshot do livro
     let snapshot = await BookSnapshot.findOne({ volumeId });
     if (!snapshot) {
       try {
@@ -765,7 +842,6 @@ app.post('/api/shelf/add', async (req, res) => {
       } catch (e) { /* segue */ }
     }
 
-    // Verifica se já existe
     const exists = await ShelfItem.findOne({ userId: req.user._id, volumeId });
     if (exists) return res.status(400).json({ mensagem: 'Livro já está na estante.' });
 
@@ -792,7 +868,6 @@ app.post('/api/shelf/add', async (req, res) => {
   }
 });
 
-// ---------- API: SHELF (atualizar) ----------
 app.post('/api/shelf/update', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
@@ -813,7 +888,6 @@ app.post('/api/shelf/update', async (req, res) => {
     item.currentChapter = (status === 'lendo' && currentChapter) ? String(currentChapter) : '';
     item.reactions = Array.isArray(reactions) ? reactions : [];
 
-    // Nota: só inteiro 0-10
     if (userRating === null || userRating === undefined || userRating === '') {
       item.userRating = null;
     } else {
@@ -834,7 +908,6 @@ app.post('/api/shelf/update', async (req, res) => {
   }
 });
 
-// ---------- API: SHELF (remover) ----------
 app.post('/api/shelf/remove', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });

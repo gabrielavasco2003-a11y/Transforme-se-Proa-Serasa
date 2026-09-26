@@ -1,5 +1,6 @@
 /* busca.js - busca em tempo real + filtros + tradução de categorias
-   + redirecionamento para book.html */
+   + redirecionamento para book.html
+   + leitura do parâmetro ?q= vindo do index.html */
 const API_KEY = "AIzaSyAu6edO3YMiflVEFdkxbZBRA9ECY-Nt31o";
 const API_BASE = "https://www.googleapis.com/books/v1/volumes";
 const CATEGORIES_URL = "../data/categories.json"; // html/ → ../data/
@@ -406,7 +407,7 @@ function updateTopCategory(items){
   dom.topCategoryName.textContent = top;
 }
 
-/* ================= initial load ================= */
+/* ================= initial load (sugestões) ================= */
 async function initialLoad(){
   dom.resultsTitle.textContent = "Melhores Avaliados";
   dom.topCategoryName.textContent = "—";
@@ -449,11 +450,28 @@ dom.topCategoryName.addEventListener("click", () => {
   });
 });
 
+/* ================= leitura do ?q= da URL ================= */
+function getQueryFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get("q") || "";
+}
+
 /* ================= START ================= */
 (async function init() {
-  await loadCategoryMap();  // 1. carrega PT↔EN
-  renderCategoryLists();    // 2. listas vazias
-  initialLoad();            // 3. busca inicial
+  await loadCategoryMap();   // 1. carrega PT↔EN
+  renderCategoryLists();     // 2. listas vazias
+
+  // 3. Verifica se veio parâmetro ?q= do index.html
+  const q = getQueryFromURL();
+  if (q) {
+    dom.searchInput.value = q;
+    state.query = q;
+    dom.resultsTitle.textContent = `Resultados para "${q}"`;
+    await performSearch(q);
+  } else {
+    // 4. Sem parâmetro → carrega sugestões normalmente
+    await initialLoad();
+  }
 })();
 
 window.performSearch = performSearch;
