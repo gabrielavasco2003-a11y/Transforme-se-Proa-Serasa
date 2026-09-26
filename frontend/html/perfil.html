@@ -2,19 +2,18 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil - Spoiler Esperado</title>
-    <!-- CSS correto -->
     <link rel="stylesheet" href="../css/perfil.css">
 </head>
 <body>
     <header>
         <div id="logo">
-            <!-- Imagem está em Projeto/img -->
             <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
         </div>
 
         <div id="search">
-            <form>
+            <form onsubmit="event.preventDefault();">
                 <input type="text" placeholder="Insira palavras-chave">
                 <button type="submit">Pesquisar</button>
             </form>
@@ -22,34 +21,45 @@
     </header>
 
     <main>
-<section id="perfil">
-    <div class="perfil-header">
-        <div class="perfil-esquerda">
-            <div id="avatar"></div>
-            <h2 id="nomePerfil">Carregando…</h2>
-        </div>
-        <button id="editar-perfil">
-            <a href="editar-perfil.html" class="btn">Editar perfil</a>
-        </button>
-    </div>
+        <section id="perfil">
+            <div class="perfil-header">
+                <div class="perfil-esquerda">
+                    <div id="avatar"></div>
+                    <h2 id="nomePerfil">Carregando…</h2>
+                </div>
+                <button id="editar-perfil">
+                    <a href="editar-perfil.html" class="btn">Editar perfil</a>
+                </button>
+            </div>
 
-    <div class="perfil-info">
-        <p><strong>Nome:</strong> <span id="nomeCompletoPerfil">—</span></p>
-        <p><strong>E-mail:</strong> <span id="emailPerfil">—</span></p>
-        <p><strong>Usuário:</strong> <span id="usuarioPerfil">—</span></p>
-        <p><strong>Data de nascimento:</strong> <span id="nascimentoPerfil">—</span></p>
-    </div>
+            <div class="perfil-info">
+                <p><strong>Nome:</strong> <span id="nomeCompletoPerfil">—</span></p>
+                <p><strong>E-mail:</strong> <span id="emailPerfil">—</span></p>
+                <p><strong>Usuário:</strong> <span id="usuarioPerfil">—</span></p>
+                <p><strong>Data de nascimento:</strong> <span id="nascimentoPerfil">—</span></p>
+            </div>
 
-    <div class="conquistas">
-        <h3>Conquistas</h3>
-        <div class="lista-conquistas"></div>
-    </div>
-</section>
+            <div class="conquistas">
+                <h3>Conquistas</h3>
+                <div class="lista-conquistas"></div>
+            </div>
+
+            <!-- Prévia da Shelf -->
+            <section id="previa-shelf" class="previa-shelf" role="link" tabindex="0"
+                     aria-label="Ver minha shelf completa">
+                <div class="previa-header">
+                    <h3>Minha Shelf</h3>
+                    <span class="ver-mais">Ver tudo →</span>
+                </div>
+                <div class="previa-lista" id="previaLista">
+                    <p class="vazio">Carregando…</p>
+                </div>
+            </section>
+        </section>
     </main>
 
     <footer>
         <div id="logo-footer">
-            <!-- Imagem está em Projeto/img -->
             <img src="../../img/logo/Logo.svg" alt="Logo Spoiler Esperado">
         </div>
         <ul>
@@ -63,9 +73,7 @@
         </div>
     </footer>
 
-    <!-- JS correto -->
-     <script src="../js/offline.js"></script>
-<script src="../js/perfil.js"></script>
-
+    <script src="../js/offline.js"></script>
+    <script src="../js/perfil.js"></script>
 </body>
 </html>

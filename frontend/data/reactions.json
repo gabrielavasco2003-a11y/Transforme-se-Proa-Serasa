@@ -1,0 +1,14 @@
+[
+  { "id": "amei",        "label": "Amei",        "emoji": "😍" },
+  { "id": "quero-mais",  "label": "Quero mais",  "emoji": "⭐" },
+  { "id": "e-ok",        "label": "É ok",        "emoji": "😐" },
+  { "id": "chorei",      "label": "Chorei",      "emoji": "😭" },
+  { "id": "curti",       "label": "Curti",       "emoji": "👍" },
+  { "id": "fraco",       "label": "Fraco",       "emoji": "😕" },
+  { "id": "engracado",   "label": "Engraçado",   "emoji": "😂" },
+  { "id": "muito-ruim",  "label": "Muito ruim",  "emoji": "👎" },
+  { "id": "favorito",    "label": "Favorito",    "emoji": "❤️" },
+  { "id": "recomendo",   "label": "Recomendo",   "emoji": "🔥" },
+  { "id": "confuso",     "label": "Confuso",     "emoji": "🤔" },
+  { "id": "abandonado",  "label": "Abandonei",   "emoji": "🗑️" }
+]

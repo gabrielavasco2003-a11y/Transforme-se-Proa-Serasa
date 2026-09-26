@@ -82,6 +82,7 @@ button {
     cursor: pointer;
     border-radius: 5px;
 }
+
 #editar-perfil.btn {
     background-color: #C09E68;
     color: #fff;
@@ -92,7 +93,6 @@ button {
     text-decoration: none;
     font-weight: bold;
 }
-
 
 /* Conquistas */
 .conquistas {
@@ -146,4 +146,85 @@ footer .acoes {
     display: flex;
     justify-content: center;
     gap: 15px;
+}
+
+/* ---------- Prévia da Shelf ---------- */
+.previa-shelf {
+    margin-top: 20px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: box-shadow .2s ease, transform .2s ease, border-color .2s ease;
+}
+
+.previa-shelf:hover,
+.previa-shelf:focus {
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    border-color: #C09E68;
+    outline: none;
+}
+
+.previa-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.previa-header h3 {
+    margin: 0;
+    color: #162745;
+    font-size: 1.1rem;
+}
+
+.previa-header .ver-mais {
+    font-size: .9rem;
+    color: #C09E68;
+    font-weight: bold;
+}
+
+.previa-lista {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.previa-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    font-size: .8rem;
+    width: 110px;
+    color: #162745;
+}
+
+.previa-item img {
+    width: 110px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    background: #FCF4E9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.previa-item span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.previa-lista .vazio {
+    width: 100%;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: .5rem 0;
 }

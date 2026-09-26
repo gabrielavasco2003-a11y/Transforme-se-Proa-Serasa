@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Detalhe do Livro - Spoiler Esperado</title>
+  <link rel="stylesheet" href="../css/book.css">
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Spoiler Esperado">
+    </div>
+    <nav>
+      <a href="index.html">Início</a>
+      <a href="shelf.html">Minha Estante</a>
+      <a href="perfil.html">Perfil</a>
+    </nav>
+  </header>
+
+  <main id="book-detail">
+    <div class="book-header">
+      <img id="book-thumbnail" alt="Capa do livro">
+      <div class="book-meta">
+        <h1 id="book-title">Título</h1>
+        <p><strong>Autor:</strong> <span id="book-authors"></span></p>
+        <p><strong>Ano:</strong> <span id="book-year"></span></p>
+        <p><strong>Gênero:</strong> <span id="book-categories"></span></p>
+        <button id="add-to-shelf">Adicionar à estante</button>
+      </div>
+    </div>
+
+    <div class="book-description">
+      <h2>Descrição</h2>
+      <p id="book-description"></p>
+    </div>
+
+    <div class="comments-section">
+      <h2>Comentários</h2>
+      <div id="comment-box" hidden>
+        <textarea id="comment-text" placeholder="O que achou?"></textarea>
+        <button id="submit-comment">Comentar</button>
+      </div>
+      <ul id="comments-list"></ul>
+    </div>
+  </main>
+
+  <footer>
+    <ul>
+      <li><a href="#">Quem somos</a></li>
+      <li><a href="#">Dúvidas Frequentes</a></li>
+      <li><a href="#">Política de Privacidade</a></li>
+      <li><a href="#">Redes sociais</a></li>
+    </ul>
+  </footer>
+
+  <script src="../js/book.js"></script>
+</body>
+</html>

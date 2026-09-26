@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Validação de Telefone</title>
+  <link rel="stylesheet" href="../css/validar-codigo.css">
+</head>
+<body>
+  <div class="validar-container">
+    <div class="validar-left">
+      <section class="logo-section">
+        <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado" class="logo">
+      </section>
+    </div>
+    <div class="validar-right">
+      <form id="codigoTelefoneForm">
+        <h2>Validação de Telefone</h2>
+        <p>Insira o código recebido:</p>
+        <div class="codigo">
+          <input maxlength="1"><input maxlength="1"><input maxlength="1"><input maxlength="1"><input maxlength="1">
+        </div>
+        <p id="timer">00:30s Reenviar código AJUSTAR</p>
+        <button type="button" onclick="validarCodigoTelefone()">Confirmar</button>
+      </form>
+    </div>
+  </div>
+  <script src="../js/validar.js"></script>
+</body>
+</html>

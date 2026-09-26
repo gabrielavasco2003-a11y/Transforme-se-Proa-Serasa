@@ -34,3 +34,8 @@ document.getElementById('loginForm').addEventListener('submit', async function (
     alert('Erro ao tentar fazer login. Sem conexão e sem dados locais.');
   }
 });
+
+// ✅ Login com Google (mesmo comportamento do cadastro.js)
+function loginGoogle() {
+  window.location.href = '/api/google';
+}

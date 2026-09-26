@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar Livro - Spoiler Esperado</title>
+  <link rel="stylesheet" href="../css/edit-shelf.css">
+</head>
+<body>
+  <header>
+    <div id="logo">
+      <img src="/img/logo/Logotipo_Logo_ModoClaro.png" alt="Spoiler Esperado">
+    </div>
+    <nav>
+      <ul>
+        <li><a href="/index.html">Início</a></li>
+        <li><a href="/shelf.html">Minha Estante</a></li>
+        <li><a href="/perfil.html">Perfil</a></li>
+      </ul>
+    </nav>
+    <div id="user-menu">
+      <div id="avatar" title="Usuário">👤</div>
+      <div id="dropdown" class="hidden">
+        <ul>
+          <li><a href="/perfil.html">Meu Perfil</a></li>
+          <li><a href="/api/logout">Sair</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="book-header">
+      <div class="book-cover">
+        <img id="edit-cover" src="/img/placeholder.png" alt="Capa do livro">
+      </div>
+      <div class="book-details">
+        <h1 id="edit-title">Carregando...</h1>
+        <p id="edit-authors" class="book-authors"></p>
+        <p id="edit-meta" class="book-meta"></p>
+        <div id="edit-tags" class="book-tags"></div>
+        <p id="edit-description" class="book-description"></p>
+      </div>
+    </section>
+
+    <section class="edit-block">
+      <div class="block-header">
+        <h2>SEU STATUS <span class="required">(obrigatório)</span></h2>
+        <a href="#" class="help-link">Precisa de ajuda?</a>
+      </div>
+      <div class="status-grid" id="status-grid">
+        <button class="status-btn" data-status="quero" type="button">
+          <span class="icon">＋</span>
+          <span class="label">Quero Ver</span>
+        </button>
+        <button class="status-btn" data-status="lendo" type="button">
+          <span class="icon">▶</span>
+          <span class="label">Lendo</span>
+        </button>
+        <button class="status-btn" data-status="terminei" type="button">
+          <span class="icon">✓</span>
+          <span class="label">Terminei</span>
+        </button>
+        <button class="status-btn" data-status="pausei" type="button">
+          <span class="icon">❚❚</span>
+          <span class="label">Pausei</span>
+        </button>
+        <button class="status-btn" data-status="desisti" type="button">
+          <span class="icon">✕</span>
+          <span class="label">Desisti</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="edit-block" id="progress-block" hidden>
+      <h2>PROGRESSO</h2>
+      <div class="progress-row">
+        <label>Página atual</label>
+        <input type="number" id="current-page" min="0" placeholder="Ex: 120">
+      </div>
+      <div class="progress-row">
+        <label>Capítulo</label>
+        <input type="text" id="current-chapter" placeholder="Ex: Cap. 7 - O Espelho">
+      </div>
+    </section>
+
+    <section class="edit-block">
+      <div class="block-header">
+        <h2>SUA REAÇÃO <span class="optional">(opcional)</span></h2>
+      </div>
+      <div class="reactions-grid" id="reactions-grid">
+        <!-- preenchido pelo JS -->
+      </div>
+    </section>
+
+    <section class="edit-block">
+      <div class="block-header">
+        <h2>SUA NOTA <span class="optional">(0 a 10, substitui a do Google)</span></h2>
+        <button id="remove-note" class="remove-note" type="button">Remover</button>
+      </div>
+      <div class="note-row">
+        <input type="range" id="note-slider" min="0" max="10" step="1" value="0">
+        <input type="number" id="note-value" min="0" max="10" step="1" value="0">
+      </div>
+      <div class="note-labels">
+        <span>0</span>
+        <span>10</span>
+      </div>
+    </section>
+
+    <section class="edit-actions">
+      <button id="delete-btn" class="danger" type="button">Remover da estante</button>
+      <button id="cancel-btn" class="secondary" type="button">Cancelar</button>
+      <button id="save-btn" class="primary" type="button">Salvar alterações</button>
+    </section>
+
+    <div id="offline-banner" class="offline-banner" hidden>
+      ⚠ Você está offline. Não será possível salvar até reconectar.
+    </div>
+  </main>
+
+  <footer>
+    <div id="logo-footer">
+      <img src="/img/logo/Logotipo_Logo_ModoClaro.png" alt="Spoiler Esperado">
+    </div>
+    <ul>
+      <li><a href="#">Quem somos</a></li>
+      <li><a href="#">Termos e serviços</a></li>
+      <li><a href="#">Política de privacidade</a></li>
+      <li><a href="#">Dúvidas frequentes</a></li>
+      <li><a href="#">Contato</a></li>
+      <li><a href="#">Suporte</a></li>
+      <li><a href="#">Redes sociais</a></li>
+    </ul>
+  </footer>
+
+  <script src="../js/edit-shelf.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+@import url('recuperar-email.css');
+
+.codigo {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.codigo input {
+  width: 55px;
+  height: 55px;
+  text-align: center;
+  margin: 8px;
+  font-size: 20px;
+  border: 1px solid #C09E68;
+  border-radius: 4px;
+  background-color: #E4D0B1;
+}
+
+#timer {
+  color: #C09E68;
+  margin-top: 15px;
+  font-weight: bold;
+}

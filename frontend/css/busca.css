@@ -1,0 +1,158 @@
+:root{
+  --bg-beige:#E4D0B1;
+  --accent:#C09E68;
+  --accent-dark:#A67C4A;
+  --text:#2b2b2b;
+  --muted:#6b6b6b;
+  --card:#ffffff;
+  --blue:#2b6fb3;
+  --radius:10px;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter, "Helvetica Neue", Arial, sans-serif;
+  color:var(--text);
+  background:linear-gradient(180deg,#fbf8f4 0%, #fff 100%);
+  -webkit-font-smoothing:antialiased;
+}
+
+.site-header{
+  background:var(--card);
+  border-bottom:1px solid rgba(0,0,0,0.06);
+  padding:18px 24px;
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+
+.header-inner{
+  max-width:1200px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+
+.logo img{height:44px}
+
+.search-bar{
+  flex:1;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.search-bar input{
+  flex:1;
+  padding:12px 14px;
+  border-radius:8px;
+  border:1px solid #ddd;
+  font-size:15px;
+}
+
+.search-bar button{
+  background:var(--blue);
+  color:#fff;
+  border:none;
+  padding:10px 14px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.top-nav a{
+  margin-left:12px;
+  color:var(--muted);
+  text-decoration:none;
+  font-weight:600;
+}
+
+.page-main{
+  max-width:1200px;
+  margin:28px auto;
+  display:flex;
+  gap:24px;
+  padding:0 16px;
+}
+
+.filters{
+  width:300px;
+  background:var(--bg-beige);
+  padding:20px;
+  border-radius:var(--radius);
+  box-shadow:0 6px 18px rgba(0,0,0,0.06);
+  min-height:420px;
+}
+
+.filters h3{margin-top:0;color:var(--accent-dark)}
+
+.filter-block{margin-bottom:16px}
+.filter-label{display:block;margin-bottom:8px;font-weight:700;color:var(--text)}
+
+.stars{display:flex;gap:6px}
+.star-btn{
+  background:transparent;border:none;font-size:20px;color:#cfc0a8;cursor:pointer;
+}
+.star-btn.active{color:#FFD700}
+
+.category-input{display:flex;gap:8px}
+.category-input input{
+  flex:1;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.08)
+}
+.category-input button{
+  background:var(--accent);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer
+}
+
+.category-list{list-style:none;padding:0;margin:8px 0 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.category-list li{
+  background:var(--accent-dark);color:#fff;padding:6px 10px;border-radius:999px;font-size:13px;display:flex;gap:8px;align-items:center
+}
+.category-list li button{background:transparent;border:none;color:#fff;cursor:pointer;font-weight:700}
+
+.suggestions{
+  margin-top:8px;background:#fff;padding:8px;border-radius:8px;border:1px solid #eee;max-height:160px;overflow:auto
+}
+.suggestions div{padding:6px;cursor:pointer}
+.suggestions div:hover{background:#f6f6f6}
+
+.filter-actions{display:flex;gap:8px;margin-top:12px}
+.filter-actions button{flex:1;padding:10px;border-radius:8px;border:none;cursor:pointer}
+.filter-actions .secondary{background:transparent;border:1px solid rgba(0,0,0,0.08)}
+
+.results{flex:1}
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+#top-category{font-size:14px;color:var(--muted)}
+#top-category-name{font-weight:700;color:var(--accent-dark)}
+
+.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.book{
+  background:var(--card);
+  border-radius:12px;
+  padding:14px;
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  box-shadow:0 8px 20px rgba(0,0,0,0.06);
+}
+.book img{width:96px;height:140px;object-fit:cover;border-radius:6px;background:#eee}
+.book-info h3{margin:0 0 6px 0;font-size:16px}
+.book-info p{margin:4px 0;color:var(--muted);font-size:14px}
+.book-cats{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.book-cats span{background:#f1f1f1;padding:4px 8px;border-radius:999px;font-size:12px;color:#444}
+
+.loading, .no-results{padding:18px;text-align:center;color:var(--muted)}
+.site-footer{padding:18px 0;background:transparent;border-top:1px solid rgba(0,0,0,0.04)}
+.site-footer ul{display:flex;gap:12px;flex-wrap:wrap;list-style:none;padding:0;margin:0;justify-content:center}
+.site-footer a{color:var(--muted);text-decoration:none;font-size:14px}
+
+.book-link {
+  display: flex;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.book-link:hover {
+  background: #fafafa;
+  border-radius: 12px;
+}

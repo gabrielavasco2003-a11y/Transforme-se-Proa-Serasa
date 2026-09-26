@@ -81,8 +81,20 @@
     } catch (err) { console.error(err); }
   }
 
+  // ---------- Registro do Service Worker ----------
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(err => {
+        console.warn('Falha ao registrar Service Worker:', err);
+      });
+    });
+  }
+
   window.addEventListener('online', sincronizar);
   document.addEventListener('DOMContentLoaded', sincronizar);
 
-  window.OfflineDB = { openDB, salvarUsuario, obterUsuario, enfileirarRequisicao, obterPendentes, sincronizar };
+  window.OfflineDB = {
+    openDB, salvarUsuario, obterUsuario,
+    enfileirarRequisicao, obterPendentes, removerPendente, sincronizar
+  };
 })();

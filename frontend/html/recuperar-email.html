@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recuperação de Senha</title>
+  <link rel="stylesheet" href="../css/recuperar-email.css">
+</head>
+<body>
+  <div class="recuperar-container">
+    <div class="recuperar-left">
+      <section class="logo-section">
+        <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado" class="logo">
+      </section>
+    </div>
+    <div class="recuperar-right">
+      <form id="recuperarForm">
+        <h2>Recuperação de Senha</h2>
+        <p>Insira seu endereço de e-mail abaixo e enviaremos um código de validação.</p>
+        <input type="email" id="email" placeholder="Digite seu e-mail" required>
+        <button type="button" onclick="enviarCodigo()">Confirmar</button>
+      </form>
+    </div>
+  </div>
+  <script src="../js/recuperar.js"></script>
+</body>
+</html>

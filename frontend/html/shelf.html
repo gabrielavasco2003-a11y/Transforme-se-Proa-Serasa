@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minha Estante - Spoiler Esperado</title>
+  <link rel="stylesheet" href="../css/shelf.css">
+</head>
+<body>
+  <header>
+    <div id="logo">
+      <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Spoiler Esperado">
+    </div>
+    
+    <div id="search">
+      <input type="text" id="search-input" placeholder="Procure por título, autor...">
+      <button id="search-btn">🔍</button>
+    </div>
+
+    <nav>
+      <ul>
+        <li><a href="index.html">Início</a></li>
+        <li><a href="perfil.html">Perfil</a></li>
+      </ul>
+    </nav>
+
+    <div id="user-menu">
+      <div id="avatar" title="Usuário">👤</div>
+      <div id="dropdown" class="hidden">
+        <ul>
+          <li><a href="perfil.html">Meu Perfil</a></li>
+          <li><a href="#">Sair</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Barra Lateral de Filtros -->
+    <aside id="filters" class="filters" aria-label="Filtros da estante">
+      <h2>Filtro</h2>
+
+      <section class="filter-block">
+        <!-- REMOVIDO: <label class="filter-label">Incluir</label> -->
+        
+        <div class="filter-group">
+          <label class="filter-label">Avaliação</label>
+          <div id="rating-filter" class="stars">
+            <button class="star-btn" data-value="1">★</button>
+            <button class="star-btn" data-value="2">★</button>
+            <button class="star-btn" data-value="3">★</button>
+            <button class="star-btn" data-value="4">★</button>
+            <button class="star-btn" data-value="5">★</button>
+          </div>
+          <span class="rating-text">ou mais</span>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Status de leitura</label>
+          <select id="status-filter" class="filter-select">
+            <option value="">Todos</option>
+            <option>Quero</option>
+            <option>Em Andamento</option>
+            <option>Concluído</option>
+          </select>
+        </div>
+
+        <!-- Gênero agora é input com datalist para busca -->
+        <div class="filter-group">
+          <label class="filter-label">Gênero</label>
+          <input id="genre-filter" list="genre-list" type="text" placeholder="Digite o gênero..." class="filter-input" />
+          <datalist id="genre-list">
+            <!-- O JS preenche com as categorias do categories.json -->
+          </datalist>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Autor</label>
+          <input id="author-filter" type="text" placeholder="Digite o autor..." class="filter-input" />
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Ano</label>
+          <input id="year-filter" type="number" placeholder="Digite o ano..." min="0" class="filter-input" />
+        </div>
+      </section>
+
+      <!-- SEÇÃO EXCLUIR AGORA É UM BOTÃO DE UNDO -->
+      <section class="filter-block excluded-block">
+        <button id="undo-filter" type="button" class="exclude-btn">Excluir último filtro</button>
+      </section>
+
+      <div class="filter-actions">
+        <button id="apply-filters" type="button">Aplicar filtros</button>
+        <button id="clear-filters" type="button" class="secondary">Remover filtros</button>
+      </div>
+    </aside>
+
+    <!-- Área Principal da Estante -->
+    <section class="shelf">
+      <div class="shelf-header">
+        <h1>Minha Estante</h1>
+      </div>
+      
+      <div id="loading" class="loading-message" hidden>Carregando...</div>
+      <div id="no-results" class="no-results-message" hidden>Nenhum resultado encontrado.</div>
+      
+      <div id="shelf-container" class="books-grid"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div id="logo-footer">
+      <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Spoiler Esperado">
+    </div>
+    <ul>
+      <li><a href="#">Quem somos</a></li>
+      <li><a href="#">Termos e serviços</a></li>
+      <li><a href="#">Política de privacidade</a></li>
+      <li><a href="#">Dúvidas frequentes</a></li>
+      <li><a href="#">Contato</a></li>
+      <li><a href="#">Suporte</a></li>
+      <li><a href="#">Redes sociais</a></li>
+    </ul>
+  </footer>
+
+  <script src="../js/shelf.js"></script>
+</body>
+</html>

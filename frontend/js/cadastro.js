@@ -51,6 +51,7 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
   }
 });
 
+// ✅ Login com Google
 function loginGoogle() {
   window.location.href = '/api/google';
 }

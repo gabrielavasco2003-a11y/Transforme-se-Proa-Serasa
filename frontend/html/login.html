@@ -32,11 +32,17 @@
                     <a href="#">Não tem cadastro?</a>
                 </div>
             </form>
+
+            <!-- Botão Google FORA do form (evita submit acidental) -->
+            <div class="google-login">
+                <button type="button" onclick="loginGoogle()">
+                    Entrar com Google
+                </button>
+            </div>
         </section>
     </main>
 
     <!-- JS correto -->
-      <!-- JS correto -->
     <script src="../js/offline.js"></script>   <!-- 👈 ADICIONE ESTA LINHA -->
     <script src="../js/login.js"></script>
 </body>
