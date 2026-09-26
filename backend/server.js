@@ -694,6 +694,34 @@ app.get('/api/books/novos', async (req, res) => {
   }
 });
 
+// ================================================================
+// ============ ROTA NOVA: BUSCA LIVRE (proxy /api/books/search) ==
+// ================================================================
+app.get('/api/books/search', async (req, res) => {
+  try {
+    const q          = String(req.query.q || 'subject:fiction');
+    const maxResults = String(req.query.maxResults || '24');
+    const orderBy    = String(req.query.orderBy || 'relevance');
+    const startIndex = req.query.startIndex ? String(req.query.startIndex) : null;
+
+    const url = new URL(GOOGLE_BOOKS_BASE);
+    url.searchParams.set('q', q);
+    url.searchParams.set('maxResults', maxResults);
+    url.searchParams.set('orderBy', orderBy);
+    if (startIndex) url.searchParams.set('startIndex', startIndex);
+    url.searchParams.set('key', GOOGLE_API_KEY);
+
+    const resp = await fetch(url);
+
+    // Repassa status real (400/429/etc) e corpo pra o front conseguir ver o motivo
+    const text = await resp.text();
+    res.status(resp.status).type('application/json').send(text);
+  } catch (err) {
+    console.error('Erro em /api/books/search:', err);
+    res.status(500).json({ error: { message: 'Erro interno ao consultar Google Books.' } });
+  }
+});
+
 // ---------- API: BOOK DETAIL ----------
 app.get('/api/book/:volumeId', async (req, res) => {
   try {

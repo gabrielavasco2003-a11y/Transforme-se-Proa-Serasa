@@ -1,8 +1,9 @@
 /* busca.js - busca em tempo real + filtros + tradução de categorias
    + redirecionamento para book.html
-   + leitura do parâmetro ?q= vindo do index.html */
-const API_KEY = "AIzaSyAu6edO3YMiflVEFdkxbZBRA9ECY-Nt31o";
-const API_BASE = "https://www.googleapis.com/books/v1/volumes";
+   + leitura do parâmetro ?q= vindo do index.html
+   + proxy via backend (/api/books/search) — a chave NÃO fica no front */
+
+const API_BASE = "/api/books/search";            // 👈 backend, não o Google
 const CATEGORIES_URL = "../data/categories.json"; // html/ → ../data/
 
 const dom = {
@@ -49,7 +50,6 @@ async function loadCategoryMap() {
     if (!res.ok) throw new Error("categories.json não encontrado: " + res.status);
     categoryMap = await res.json();
     rebuildReverseMap();
-    // sugestões = SOMENTE chaves em português
     Object.keys(categoryMap).forEach(pt => state.availableCategories.add(pt));
     console.log("✅ Categorias carregadas:", Object.keys(categoryMap).length, "entradas");
   } catch (e) {
@@ -73,7 +73,6 @@ function toDisplayCategory(apiCat) {
   if (!apiCat) return null;
   const key = String(apiCat).toLowerCase().trim();
   if (reverseMap[key]) return reverseMap[key];
-  // match parcial: "Fantasy / Epic" → "Fantasia"
   const hit = Object.keys(reverseMap).find(k => key.includes(k));
   return hit ? reverseMap[hit] : null;
 }
@@ -84,7 +83,6 @@ function toApiCategoryList(displayCat) {
   const trimmed = displayCat.trim();
   const key = Object.keys(categoryMap).find(k => k.toLowerCase() === trimmed.toLowerCase());
   if (key) return categoryMap[key];
-  // fallback: usuário digitou algo fora do JSON → usa como está
   return [trimmed];
 }
 
@@ -97,16 +95,26 @@ function debounce(fn, wait = 350){
   };
 }
 
-/* ================= fetch helper ================= */
+/* ================= fetch helper (via backend) ================= */
 async function fetchBooksRaw(q, params = {}) {
-  const url = new URL(API_BASE);
+  const url = new URL(API_BASE, window.location.origin);
   url.searchParams.set("q", q);
-  url.searchParams.set("maxResults", params.maxResults || 20);
-  if (params.startIndex) url.searchParams.set("startIndex", params.startIndex);
+  url.searchParams.set("maxResults", String(params.maxResults || 20));
+  if (params.startIndex) url.searchParams.set("startIndex", String(params.startIndex));
   if (params.orderBy) url.searchParams.set("orderBy", params.orderBy);
-  url.searchParams.set("key", API_KEY);
-  const res = await fetch(url.toString());
-  if (!res.ok) throw new Error("Erro na API");
+  // ❌ NÃO envia "key" — o backend cuida disso
+
+  const res = await fetch(url.toString(), { credentials: "same-origin" });
+
+  if (!res.ok) {
+    let detalhe = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      detalhe = body?.error?.message || body?.mensagem || detalhe;
+    } catch (_) { /* corpo não-JSON */ }
+    throw new Error(detalhe);
+  }
+
   return res.json();
 }
 
@@ -120,16 +128,13 @@ function filterAndNormalize(items) {
   const filtered = items.filter(item => {
     const info = item.volumeInfo || {};
 
-    // rating (comparação exata, sem arredondar)
     if (state.rating && ((info.averageRating || 0) < state.rating)) return false;
 
-    // author
     if (state.author) {
       const authors = (info.authors || []).join(" ").toLowerCase();
       if (!authors.includes(state.author.toLowerCase())) return false;
     }
 
-    // year
     if (state.year) {
       const year = info.publishedDate ? info.publishedDate.split("-")[0] : "";
       if (year !== String(state.year)) return false;
@@ -137,7 +142,6 @@ function filterAndNormalize(items) {
 
     const apiCats = (info.categories || []).map(c => c.toLowerCase());
 
-    // INCLUIR: cada filtro do usuário precisa bater com ≥1 categoria do livro
     if (includeApiLists.length) {
       const allMatch = includeApiLists.every(list =>
         list.some(api => apiCats.some(c => c.includes(api.toLowerCase())))
@@ -145,7 +149,6 @@ function filterAndNormalize(items) {
       if (!allMatch) return false;
     }
 
-    // EXCLUIR: qualquer filtro que bate remove o livro
     if (excludeApiLists.length) {
       const anyExcluded = excludeApiLists.some(list =>
         list.some(api => apiCats.some(c => c.includes(api.toLowerCase())))
@@ -158,7 +161,6 @@ function filterAndNormalize(items) {
 
   return filtered.map(item => {
     const info = item.volumeInfo || {};
-    // traduz, remove não-mapeadas e duplicatas
     const displayCats = Array.from(new Set(
       (info.categories || []).map(toDisplayCategory).filter(Boolean)
     ));
@@ -280,7 +282,7 @@ function showSuggestions(container, items){
 
 function suggestCategoriesFromInput(inputValue){
   const q = (inputValue || "").toLowerCase().trim();
-  const all = Object.keys(categoryMap); // só PT
+  const all = Object.keys(categoryMap);
   if (!q) return all.slice(0, 12);
   return all.filter(c => c.toLowerCase().includes(q)).slice(0, 12);
 }
@@ -341,7 +343,11 @@ dom.applyFiltersBtn.addEventListener("click", () => {
 });
 
 dom.clearFiltersBtn.addEventListener("click", () => {
-  state = { ...state, rating: 0, includeCategories: [], excludeCategories: [], author: "", year: "" };
+  state.rating = 0;
+  state.includeCategories = [];
+  state.excludeCategories = [];
+  state.author = "";
+  state.year = "";
   dom.authorFilter.value = "";
   dom.yearFilter.value = "";
   dom.categorySearch.value = "";
@@ -386,7 +392,7 @@ async function performSearch(query) {
     console.error(err);
     dom.booksContainer.innerHTML = "";
     dom.noResults.hidden = false;
-    dom.noResults.textContent = "Erro ao buscar. Tente novamente.";
+    dom.noResults.textContent = "Erro ao buscar: " + err.message;
   } finally {
     dom.loading.hidden = true;
   }
@@ -424,7 +430,7 @@ async function initialLoad(){
   } catch (err) {
     console.error(err);
     dom.noResults.hidden = false;
-    dom.noResults.textContent = "Erro ao carregar sugestões.";
+    dom.noResults.textContent = "Erro ao carregar sugestões: " + err.message;
   } finally {
     dom.loading.hidden = true;
   }
@@ -458,10 +464,9 @@ function getQueryFromURL(){
 
 /* ================= START ================= */
 (async function init() {
-  await loadCategoryMap();   // 1. carrega PT↔EN
-  renderCategoryLists();     // 2. listas vazias
+  await loadCategoryMap();
+  renderCategoryLists();
 
-  // 3. Verifica se veio parâmetro ?q= do index.html
   const q = getQueryFromURL();
   if (q) {
     dom.searchInput.value = q;
@@ -469,7 +474,6 @@ function getQueryFromURL(){
     dom.resultsTitle.textContent = `Resultados para "${q}"`;
     await performSearch(q);
   } else {
-    // 4. Sem parâmetro → carrega sugestões normalmente
     await initialLoad();
   }
 })();
