@@ -1,25 +1,12 @@
 // ================================================================
-// index.html — script.js
+// script.js — compartilhado por todas as páginas
 // - Mantém o usuário logado (pergunta ao backend /api/me)
+// - Alterna entre #nav-visitante e #user-menu
 // - Cards de livro abrem book.html?volumeId=...
-// - Setas de rolagem nas seções
+// - Setas de rolagem nas seções (só no index.html)
 // ================================================================
 
 const IMG_FALLBACK = '/img/sem-capa.jpg';
-
-/* ================= SETAS DE ROLAGEM ================= */
-document.querySelectorAll('.arrow').forEach(arrow => {
-  arrow.addEventListener('click', () => {
-    const livros = arrow.parentElement.querySelector('.livros');
-    if (!livros) return;
-    const scrollAmount = 200;
-    if (arrow.classList.contains('left')) {
-      livros.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-    } else {
-      livros.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  });
-});
 
 /* ================= HELPERS ================= */
 function escapeHtml(str) {
@@ -38,11 +25,21 @@ function pickCover(item) {
   return url && url.trim() ? url.replace('http://', 'https://') : IMG_FALLBACK;
 }
 
-/**
- * Cria o card de um livro.
- * O <a> envolve o card inteiro, então clicar em qualquer lugar dele navega
- * para book.html?volumeId=... (quando existir volumeId).
- */
+/* ================= SETAS DE ROLAGEM (só index) ================= */
+document.querySelectorAll('.arrow').forEach(arrow => {
+  arrow.addEventListener('click', () => {
+    const livros = arrow.parentElement.querySelector('.livros');
+    if (!livros) return;
+    const scrollAmount = 200;
+    if (arrow.classList.contains('left')) {
+      livros.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    } else {
+      livros.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  });
+});
+
+/* ================= CARD DE LIVRO ================= */
 function criarCardLivro(item) {
   const volumeId = item.volumeId || item.id || '';
   const titulo   = item.title || item.titulo || 'Sem título';
@@ -52,7 +49,6 @@ function criarCardLivro(item) {
 
   const article = document.createElement('article');
 
-  // Conteúdo interno (imagem + textos)
   const inner = document.createElement('div');
   inner.className = 'livro-inner';
   inner.innerHTML = `
@@ -65,30 +61,28 @@ function criarCardLivro(item) {
     <p class="avaliacoes">${count ? count + ' avaliações' : 'Sem avaliações'}</p>
   `;
 
-  // Se tiver volumeId, envolve tudo num <a> que leva para book.html
   if (volumeId) {
     const link = document.createElement('a');
-    link.href = `book.html?volumeId=${encodeURIComponent(volumeId)}`;
+    link.href = `/book.html?volumeId=${encodeURIComponent(volumeId)}`;
     link.className = 'book-link';
     link.setAttribute('aria-label', `Abrir detalhes de ${titulo}`);
     link.appendChild(inner);
     article.appendChild(link);
   } else {
-    // Sem volumeId (ex.: Jabuti) → só mostra o card, sem link
     article.appendChild(inner);
   }
 
   return article;
 }
 
-/* ================= CARREGAMENTO DAS SEÇÕES ================= */
+/* ================= CARREGAMENTO DAS SEÇÕES (só index) ================= */
 function getLivrosDiv(sectionName) {
   return document.querySelector(`section.livros-section[data-section="${sectionName}"] .livros`);
 }
 
 async function carregarEmAlta() {
   const div = getLivrosDiv('em-alta');
-  if (!div) return;
+  if (!div) return; // se não existir nesta página, sai silenciosamente
   div.innerHTML = '<p class="carregando">Carregando...</p>';
   try {
     const response = await fetch('/api/books/em-alta');
@@ -120,7 +114,6 @@ async function carregarJabuti() {
       return;
     }
     data.forEach(item => {
-      // Normaliza o formato do jabuti.json para o mesmo do Google Books
       const normalized = {
         volumeId: item.volumeId || item.id || '',
         title:    item.titulo || item.title || '',
@@ -157,6 +150,8 @@ async function carregarNovos() {
 }
 
 /* ================= SESSÃO / LOGIN PERSISTENTE ================= */
+let _sessionBound = false; // evita duplicar listeners se checarSessao rodar 2x
+
 async function checarSessao() {
   const navVisitante = document.getElementById('nav-visitante');
   const userMenu     = document.getElementById('user-menu');
@@ -165,6 +160,9 @@ async function checarSessao() {
   const dropdown     = document.getElementById('dropdown');
   const logoutBtn    = document.getElementById('logout');
 
+  // Se esta página não tem header (raro), sai
+  if (!navVisitante && !userMenu) return;
+
   let user = null;
   try {
     const res = await fetch('/api/me', { credentials: 'same-origin' });
@@ -172,8 +170,12 @@ async function checarSessao() {
   } catch (_) { /* sem backend → trata como visitante */ }
 
   if (user) {
-    // Usuário logado → esconde Cadastro/Login, mostra menu
-    if (navVisitante) navVisitante.style.display = 'none';
+    // ---- LOGADO ----
+    if (navVisitante) {
+      navVisitante.hidden = true;
+      navVisitante.classList.add('hidden');
+      navVisitante.style.display = 'none';
+    }
     if (userMenu) {
       userMenu.hidden = false;
       userMenu.classList.remove('hidden');
@@ -184,36 +186,45 @@ async function checarSessao() {
       avatarInit.textContent = String(nome).trim().charAt(0).toUpperCase() || '?';
     }
 
-    // Alternar dropdown
-    if (avatar && dropdown) {
-      avatar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const aberto = !dropdown.classList.contains('hidden');
-        dropdown.classList.toggle('hidden', aberto);
-        avatar.setAttribute('aria-expanded', String(!aberto));
-      });
-      document.addEventListener('click', (e) => {
-        if (userMenu && !userMenu.contains(e.target)) {
-          dropdown.classList.add('hidden');
-          avatar.setAttribute('aria-expanded', 'false');
-        }
-      });
-    }
+    if (!_sessionBound) {
+      _sessionBound = true;
 
-    // Logout
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        try {
-          await fetch('/api/logout', { credentials: 'same-origin' });
-        } catch (_) { /* ignora */ }
-        // Recarrega para o estado de visitante
-        window.location.href = '/index.html';
-      });
+      // Alternar dropdown
+      if (avatar && dropdown) {
+        avatar.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const aberto = !dropdown.classList.contains('hidden');
+          dropdown.classList.toggle('hidden', aberto);
+          dropdown.hidden = aberto;
+          avatar.setAttribute('aria-expanded', String(!aberto));
+        });
+        document.addEventListener('click', (e) => {
+          if (userMenu && !userMenu.contains(e.target)) {
+            dropdown.classList.add('hidden');
+            dropdown.hidden = true;
+            avatar.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+
+      // Logout
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          try {
+            await fetch('/api/logout', { credentials: 'same-origin' });
+          } catch (_) { /* ignora */ }
+          window.location.href = '/index.html';
+        });
+      }
     }
   } else {
-    // Visitante → mostra Cadastro/Login, esconde menu
-    if (navVisitante) navVisitante.style.display = 'block';
+    // ---- VISITANTE ----
+    if (navVisitante) {
+      navVisitante.hidden = false;
+      navVisitante.classList.remove('hidden');
+      navVisitante.style.display = 'block';
+    }
     if (userMenu) {
       userMenu.hidden = true;
       userMenu.classList.add('hidden');
@@ -222,8 +233,19 @@ async function checarSessao() {
   }
 }
 
-/* ================= INICIALIZAÇÃO ================= */
-carregarEmAlta();
-carregarJabuti();
-carregarNovos();
-checarSessao();
+/* ================= INICIALIZAÇÃO SEGURA ================= */
+function init() {
+  // Carrega seções (só rodam se existirem)
+  carregarEmAlta();
+  carregarJabuti();
+  carregarNovos();
+
+  // Toggle de login/visitante
+  checarSessao();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
