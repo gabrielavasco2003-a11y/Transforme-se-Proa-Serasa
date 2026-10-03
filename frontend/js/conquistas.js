@@ -1,15 +1,12 @@
 // ================================================================
-// conquistas.js — Estante gamificada com conquistas
-// - Adicionar livros (título, gênero, status, nota, ano)
-// - Estatísticas automáticas
-// - Desbloqueio automático de conquistas
-// - Persistência em localStorage (troca por API depois se quiser)
+// conquistas.js — Conquistas baseadas na estante real do usuário
+// - Puxa os livros de /api/shelf (backend)
+// - Calcula estatísticas e conquistas automaticamente
+// - Sem formulário, sem localStorage
 // ================================================================
 
 (function () {
   'use strict';
-
-  const STORAGE_KEY = 'spoiler_estante_livros';
 
   /* ============================================================
      DEFINIÇÃO DAS CONQUISTAS
@@ -22,7 +19,10 @@
       icon: '/img/conquistas/explorador-literario.png',
       check: (books) => {
         const concluidos = books.filter(b => b.status === 'terminei');
-        const generos = new Set(concluidos.map(b => (b.genre || '').toLowerCase().trim()).filter(Boolean));
+        const generos = new Set(
+          concluidos.flatMap(b => (b.categories || []).map(c => String(c).toLowerCase().trim()))
+                     .filter(Boolean)
+        );
         return generos.size >= 5;
       }
     },
@@ -33,7 +33,8 @@
       icon: '/img/conquistas/maratonista.png',
       check: (books) => {
         const concluidos = books
-          .filter(b => b.status === 'terminei' && b.finishedAt)
+          .filter(b => b.status === 'terminei' && b.updatedAt)
+          .map(b => ({ ...b, finishedAt: new Date(b.updatedAt).getTime() }))
           .sort((a, b) => a.finishedAt - b.finishedAt);
         if (concluidos.length < 3) return false;
         for (let i = 0; i <= concluidos.length - 3; i++) {
@@ -48,7 +49,7 @@
       name: 'Crítico Severíssimo',
       desc: 'Dar nota 1 para pelo menos 5 livros',
       icon: '/img/conquistas/critico-severissimo.png',
-      check: (books) => books.filter(b => Number(b.rating) === 1).length >= 5
+      check: (books) => books.filter(b => Number(b.userRating) === 1).length >= 5
     },
     {
       id: 'classicos',
@@ -56,8 +57,8 @@
       desc: 'Adicionar 10 livros publicados antes de 1950',
       icon: '/img/conquistas/colecionador-classicos.png',
       check: (books) => books.filter(b => {
-        const ano = Number(b.year);
-        return ano > 0 && ano < 1950;
+        const ano = parseInt(String(b.publishedDate || '').split('-')[0], 10);
+        return !isNaN(ano) && ano > 0 && ano < 1950;
       }).length >= 10
     },
     {
@@ -74,10 +75,11 @@
       icon: '/img/conquistas/primeiro-amor.png',
       check: (books) => {
         const concluidos = books
-          .filter(b => b.status === 'terminei' && b.finishedAt)
+          .filter(b => b.status === 'terminei' && b.updatedAt)
+          .map(b => ({ ...b, finishedAt: new Date(b.updatedAt).getTime() }))
           .sort((a, b) => a.finishedAt - b.finishedAt);
         if (!concluidos.length) return false;
-        return Number(concluidos[0].rating) === 10;
+        return Number(concluidos[0].userRating) === 10;
       }
     }
   ];
@@ -85,28 +87,21 @@
   /* ============================================================
      ESTADO
      ============================================================ */
-  let books = loadBooks();
-  let unlockedIds = new Set();
+  let books = [];
+  const unlockedIds = new Set();
 
   /* ============================================================
-     PERSISTÊNCIA (localStorage)
+     FETCH: estante do usuário
      ============================================================ */
-  function loadBooks() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      console.warn('Erro ao carregar livros:', e);
-      return [];
+  async function fetchShelf() {
+    const res = await fetch('/api/shelf', { credentials: 'same-origin' });
+    if (res.status === 401) {
+      // Não logado → não tem estante
+      return null;
     }
-  }
-
-  function saveBooks() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(books));
-    } catch (e) {
-      console.warn('Erro ao salvar livros:', e);
-    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.livros || [];
   }
 
   /* ============================================================
@@ -115,11 +110,11 @@
   function computeStats() {
     const total = books.length;
     const concluidos = books.filter(b => b.status === 'terminei').length;
-    const andamento = books.filter(b => b.status === 'andamento').length;
+    const andamento = books.filter(b => b.status === 'lendo').length;
     const desistidos = books.filter(b => b.status === 'desisti').length;
     const quero = books.filter(b => b.status === 'quero').length;
 
-    const notas = books.map(b => Number(b.rating)).filter(n => n > 0);
+    const notas = books.map(b => Number(b.userRating)).filter(n => n > 0);
     const media = notas.length ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(1) : '—';
 
     return { total, concluidos, andamento, desistidos, quero, media };
@@ -127,65 +122,16 @@
 
   function renderStats() {
     const s = computeStats();
-    document.getElementById('stat-total').textContent = s.total;
-    document.getElementById('stat-concluidos').textContent = s.concluidos;
-    document.getElementById('stat-andamento').textContent = s.andamento;
-    document.getElementById('stat-desistidos').textContent = s.desistidos;
-    document.getElementById('stat-quero').textContent = s.quero;
-    document.getElementById('stat-media').textContent = s.media;
-  }
-
-  /* ============================================================
-     LISTA DA ESTANTE
-     ============================================================ */
-  function renderShelf() {
-    const container = document.getElementById('shelf-list');
-    if (!container) return;
-
-    if (!books.length) {
-      container.innerHTML = '<p class="empty-msg">Nenhum livro ainda. Adicione o primeiro!</p>';
-      return;
-    }
-
-    container.innerHTML = '';
-    books.forEach((book, index) => {
-      const card = document.createElement('div');
-      card.className = `book-card status-${book.status}`;
-      const ano = book.year ? `📅 ${book.year}` : '';
-      const genero = book.genre ? `📖 ${escapeHtml(book.genre)}` : '';
-      const nota = book.rating > 0 ? `⭐ ${book.rating}/10` : '';
-
-      const statusLabel = {
-        quero: 'Quero ler',
-        andamento: 'Em andamento',
-        terminei: 'Terminei',
-        desisti: 'Desisti'
-      }[book.status] || book.status;
-
-      card.innerHTML = `
-        <h3>${escapeHtml(book.title)}</h3>
-        <div class="book-meta">
-          <span class="book-status-badge">${statusLabel}</span>
-          ${genero ? `<span>${genero}</span>` : ''}
-          ${ano ? `<span>${ano}</span>` : ''}
-          ${nota ? `<span class="book-rating">${nota}</span>` : ''}
-        </div>
-        <div class="book-actions">
-          <button type="button" class="btn-remove" data-index="${index}">Remover</button>
-        </div>
-      `;
-      container.appendChild(card);
-    });
-
-    // Botões de remover
-    container.querySelectorAll('.btn-remove').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = Number(e.currentTarget.dataset.index);
-        books.splice(idx, 1);
-        saveBooks();
-        renderAll();
-      });
-    });
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+    set('stat-total', s.total);
+    set('stat-concluidos', s.concluidos);
+    set('stat-andamento', s.andamento);
+    set('stat-desistidos', s.desistidos);
+    set('stat-quero', s.quero);
+    set('stat-media', s.media);
   }
 
   /* ============================================================
@@ -196,7 +142,8 @@
     ACHIEVEMENTS.forEach(ach => {
       if (unlockedIds.has(ach.id)) return;
       let ok = false;
-      try { ok = ach.check(books); } catch (e) { console.warn('Erro ao checar', ach.id, e); }
+      try { ok = ach.check(books); }
+      catch (e) { console.warn('Erro ao checar conquista', ach.id, e); }
       if (ok) {
         unlockedIds.add(ach.id);
         newlyUnlocked.push(ach);
@@ -216,56 +163,32 @@
       card.className = `achievement-card ${unlocked ? 'unlocked' : 'locked'}`;
       card.innerHTML = `
         ${unlocked ? '<span class="unlocked-badge">✓ Desbloqueada</span>' : ''}
-        <img src="${ach.icon}" alt="${ach.name}" class="achievement-icon" onerror="this.style.opacity=0.3">
-        <h3>${ach.name}</h3>
-        <p>${ach.desc}</p>
+        <img src="${ach.icon}" alt="${ach.name}" class="achievement-icon"
+             onerror="this.style.opacity=0.3">
+        <h3>${escapeHtml(ach.name)}</h3>
+        <p>${escapeHtml(ach.desc)}</p>
       `;
       grid.appendChild(card);
     });
   }
 
-  function notifyUnlocked(list) {
-    if (!list.length) return;
-    list.forEach((ach, i) => {
-      setTimeout(() => {
-        alert(`🏆 Conquista desbloqueada!\n\n${ach.name}\n${ach.desc}`);
-      }, i * 400);
-    });
-  }
-
   /* ============================================================
-     FORMULÁRIO
+     ESTADO VAZIO / NÃO LOGADO
      ============================================================ */
-  function bindForm() {
-    const form = document.getElementById('add-book-form');
-    if (!form) return;
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-
-      const title = document.getElementById('book-title').value.trim();
-      if (!title) return;
-
-      const book = {
-        title,
-        genre: document.getElementById('book-genre').value.trim(),
-        status: document.getElementById('book-status').value,
-        rating: Number(document.getElementById('book-rating').value) || 0,
-        year: Number(document.getElementById('book-year').value) || 0,
-        addedAt: Date.now(),
-        finishedAt: document.getElementById('book-status').value === 'terminei' ? Date.now() : null
-      };
-
-      books.push(book);
-      saveBooks();
-
-      const unlocked = checkAchievements();
-      renderAll();
-      notifyUnlocked(unlocked);
-
-      form.reset();
-      document.getElementById('book-title').focus();
-    });
+  function renderEmptyState(msg) {
+    const stats = document.querySelector('.stats-section');
+    const ach = document.querySelector('.achievements-section');
+    // Não esconde — só mostra mensagem no grid de conquistas
+    const grid = document.getElementById('achievements-grid');
+    if (grid) {
+      grid.innerHTML = `<p class="empty-msg" style="grid-column:1/-1;text-align:center;color:#6b6b6b;font-style:italic;padding:20px">${escapeHtml(msg)}</p>`;
+    }
+    // Zera as estatísticas
+    ['stat-total','stat-concluidos','stat-andamento','stat-desistidos','stat-quero','stat-media']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '—';
+      });
   }
 
   /* ============================================================
@@ -279,17 +202,44 @@
 
   function renderAll() {
     renderStats();
-    renderShelf();
     renderAchievements();
   }
 
   /* ============================================================
      INICIALIZAÇÃO
      ============================================================ */
-  function init() {
-    checkAchievements();   // recalcula conquistas com base nos livros salvos
+  async function init() {
+    // 1. Verifica se está logado
+    let user = null;
+    try {
+      const res = await fetch('/api/me', { credentials: 'same-origin' });
+      if (res.ok) user = await res.json();
+    } catch (_) { /* sem backend */ }
+
+    if (!user) {
+      renderEmptyState('Faça login para ver suas conquistas.');
+      return;
+    }
+
+    // 2. Busca a estante
+    try {
+      const livros = await fetchShelf();
+      books = Array.isArray(livros) ? livros : [];
+    } catch (e) {
+      console.error('Erro ao buscar estante:', e);
+      renderEmptyState('Não foi possível carregar sua estante.');
+      return;
+    }
+
+    // 3. Se vazio, avisa
+    if (!books.length) {
+      renderEmptyState('Sua estante está vazia. Adicione livros em "Minha Estante" para desbloquear conquistas.');
+      return;
+    }
+
+    // 4. Calcula conquistas + renderiza
+    checkAchievements();
     renderAll();
-    bindForm();
   }
 
   if (document.readyState === 'loading') {
@@ -298,6 +248,6 @@
     init();
   }
 
-  // Expõe para debug
-  window.__estante = { books, ACHIEVEMENTS, renderAll };
+  // Debug
+  window.__conquistas = { ACHIEVEMENTS, getBooks: () => books };
 })();
