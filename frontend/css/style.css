@@ -246,3 +246,10 @@ footer {
 #logo-footer img { height: 40px; }
 footer ul { list-style: none; display: flex; justify-content: center; gap: 20px; margin-top: 10px; }
 footer a { color: #FCF4E9; text-decoration: none; }
+/* Garante tamanho fixo da logo do footer em todas as páginas */
+#logo-footer img,
+footer #logo-footer img {
+    height: 40px !important;
+    width: auto !important;
+    max-width: 200px !important;
+}
