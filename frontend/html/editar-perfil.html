@@ -2,32 +2,24 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edição de Perfil - Spoiler Esperado</title>
-    <!-- CSS correto -->
-     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="../css/editar-perfil.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/editar-perfil.css">
 </head>
 <body>
+
 <header role="banner">
-    <!-- Logo -->
     <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
         <img src="/img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
     </a>
 
-    <!-- Busca centralizada -->
     <form id="search-form" action="/busca.html" method="get" role="search">
         <label for="search-input" class="sr-only">Buscar livros</label>
-        <input
-            type="search"
-            name="q"
-            id="search-input"
-            placeholder="Insira palavras-chave"
-            aria-label="Buscar livros"
-        >
+        <input type="search" name="q" id="search-input" placeholder="Insira palavras-chave" aria-label="Buscar livros">
         <button type="submit" id="search-btn">Pesquisar</button>
     </form>
 
-    <!-- Navegação para visitantes (não logados) -->
     <nav id="nav-visitante" aria-label="Navegação de visitante">
         <ul>
             <li><a href="/cadastro.html">Cadastro</a></li>
@@ -35,9 +27,7 @@
         </ul>
     </nav>
 
-    <!-- Menu do usuário logado -->
     <nav id="user-menu" class="hidden" hidden aria-label="Menu do usuário">
-        <!-- Avatar: SÓ ABRE -->
         <button
             id="avatar"
             type="button"
@@ -59,9 +49,7 @@
             <span id="avatar-initial" aria-hidden="true">?</span>
         </button>
 
-        <!-- Dropdown -->
         <ul id="dropdown" class="hidden" role="menu" hidden>
-            <!-- Botão X: SÓ FECHA -->
             <li role="none" class="dropdown-close-item">
                 <button
                     id="fechar-dropdown"
@@ -82,7 +70,7 @@
                     "
                 >✕</button>
             </li>
-<li role="none"><a href="/adicionar-livro.html" role="menuitem">➕ Adicionar Livro</a></li>
+            <li role="none"><a href="/adicionar-livro.html" role="menuitem">➕ Adicionar Livro</a></li>
             <li role="none"><a href="/shelf.html" role="menuitem">Minha Estante</a></li>
             <li role="none"><a href="/perfil.html" role="menuitem">Meu Perfil</a></li>
             <li role="none"><a href="/editar-perfil.html" role="menuitem">Editar Perfil</a></li>
@@ -91,63 +79,81 @@
         </ul>
     </nav>
 </header>
-    <main>
-        <section id="editar-perfil">
-            <h2>EDIÇÃO PERFIL</h2>
 
-            <div class="editar-container">
-                <!-- Avatar -->
-                <div class="avatar-section">
-                    <div id="avatar"></div>
-                    <button id="alterar-foto">Alterar</button>
+<main>
+    <section id="editar-perfil">
+        <h2>EDIÇÃO PERFIL</h2>
+
+        <div class="editar-container">
+            <!-- Avatar -->
+            <div class="avatar-section">
+                <!-- Avatar de perfil — usa classe própria pra não conflitar com o #avatar do header -->
+                <div class="perfil-avatar" id="perfil-avatar">
+                    <img id="perfil-avatar-img" src="/img/perfil/1.png" alt="Avatar do usuário">
+                </div>
+                <button type="button" id="alterar-foto">Alterar foto</button>
+            </div>
+
+            <!-- Formulário ao lado -->
+            <form id="form-editar" class="form-section">
+                <div class="form-group">
+                    <label for="username">Nome de usuário:</label>
+                    <input type="text" id="username" name="username" placeholder="Nome de usuário...">
                 </div>
 
-                <!-- Formulário ao lado -->
-                <form id="form-editar" class="form-section">
-                    <div class="form-group">
-                        <label for="username">Nome de usuário:</label>
-                        <input type="text" id="username" name="username" placeholder="Nome de usuário...">
-                    </div>
+                <div class="form-group">
+                    <label for="nome">Nome:</label>
+                    <input type="text" id="nome" name="nome" placeholder="Nome...">
+                </div>
 
-                    <div class="form-group">
-                        <label for="nome">Nome:</label>
-                        <input type="text" id="nome" name="nome" placeholder="Nome...">
-                    </div>
+                <div class="form-group">
+                    <label for="email">E-mail:</label>
+                    <input type="email" id="email" name="email" placeholder="E-mail...">
+                </div>
 
-                    <div class="form-group">
-                        <label for="email">E-mail:</label>
-                        <input type="email" id="email" name="email" placeholder="E-mail...">
-                    </div>
+                <div class="form-group">
+                    <label for="senha">Senha:</label>
+                    <input type="password" id="senha" name="senha" placeholder="Senha...">
+                </div>
 
-                    <div class="form-group">
-                        <label for="senha">Senha:</label>
-                        <input type="password" id="senha" name="senha" placeholder="Senha...">
-                    </div>
+                <div class="form-actions">
+                    <button type="submit" class="confirmar">Confirmar</button>
+                    <button type="button" id="excluir-conta">Excluir conta</button>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
 
-                    <div class="form-actions">
-                        <button type="submit" class="confirmar">Confirmar</button>
-                        <button type="button" id="excluir-conta">Excluir conta</button>
-                    </div>
-                </form>
-            </div>
-        </section>
-    </main>
+<!-- ===================== MODAL DE AVATARES ===================== -->
+<div id="avatar-modal" class="avatar-modal hidden" hidden>
+    <div class="avatar-modal-content">
+        <button type="button" id="fechar-modal-avatar" class="modal-close" aria-label="Fechar">✕</button>
+        <h3>Escolha seu avatar</h3>
+        <div id="avatar-grid" class="avatar-grid">
+            <!-- Preenchido via JS: 9 imagens -->
+        </div>
+        <div class="modal-actions">
+            <button type="button" id="salvar-avatar" class="confirmar">Salvar avatar</button>
+            <button type="button" id="cancelar-avatar" class="btn-secondary">Cancelar</button>
+        </div>
+    </div>
+</div>
 
 <footer>
     <div id="logo-footer">
         <img src="/img/logo/Logo.svg" alt="Logo Spoiler Esperado">
     </div>
     <ul>
-<li><a href="/quem-somos.html">Quem somos</a></li>
-<li><a href="/termos-servicos.html">Termos e serviços</a></li>
-<li><a href="/politica-privacidade.html">Política de privacidade</a></li>
-<li><a href="/fale-conosco.html">Fale conosco</a></li>
+        <li><a href="/quem-somos.html">Quem somos</a></li>
+        <li><a href="/termos-servicos.html">Termos e serviços</a></li>
+        <li><a href="/politica-privacidade.html">Política de privacidade</a></li>
+        <li><a href="/fale-conosco.html">Fale conosco</a></li>
     </ul>
 </footer>
 
-    <!-- JS correto -->
-     <script src="/js/offline.js"></script>
+<script src="/js/offline.js"></script>
 <script src="/js/script.js"></script>
-    <script src="../js/editar-perfil.js"></script>
+<script src="/js/editar-perfil.js"></script>
 </body>
 </html>

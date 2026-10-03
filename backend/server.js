@@ -187,6 +187,7 @@ const UserSchema = new mongoose.Schema({
   telefoneVerificado: { type: Boolean, default: false },
   nascimento: Date,
   googleId: String,
+  avatar: { type: String, default: '/img/perfil/1.png' },
   livros: [{
     volumeId: String,
     isbn: String,
@@ -562,6 +563,67 @@ app.delete('/api/excluir', async (req, res) => {
     res.json({ mensagem: 'Conta excluída com sucesso!' });
   } catch (err) {
     res.status(500).json({ mensagem: 'Erro ao excluir conta.' });
+  }
+});
+
+// ================================================================
+// ============ NOVO: ATUALIZAR AVATAR DO PERFIL ==================
+// ================================================================
+app.post('/api/perfil/avatar', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
+    const { avatar } = req.body;
+
+    const AVATARES_VALIDOS = [
+      '/img/perfil/1.png','/img/perfil/2.png','/img/perfil/3.png',
+      '/img/perfil/4.png','/img/perfil/5.png','/img/perfil/6.png',
+      '/img/perfil/7.png','/img/perfil/8.png','/img/perfil/9.png'
+    ];
+
+    if (!avatar || !AVATARES_VALIDOS.includes(avatar)) {
+      return res.status(400).json({ mensagem: 'Avatar inválido.' });
+    }
+
+    const usuario = await User.findById(req.user._id);
+    if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+
+    usuario.avatar = avatar;
+    await usuario.save();
+
+    return res.json({ mensagem: 'Avatar atualizado!', avatar: usuario.avatar });
+  } catch (err) {
+    console.error('Erro em /api/perfil/avatar:', err);
+    return res.status(500).json({ mensagem: 'Erro ao salvar avatar.' });
+  }
+});
+
+// ================================================================
+// ============ NOVO: ATUALIZAR DADOS DO PERFIL ===================
+// ================================================================
+app.post('/api/perfil/atualizar', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
+
+    const { nome, usuario: username, senha } = req.body;
+
+    const u = await User.findById(req.user._id);
+    if (!u) return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+
+    if (nome)     u.nome = String(nome).trim();
+    if (username) u.usuario = String(username).trim();
+    if (senha) {
+      if (String(senha).length < 6) {
+        return res.status(400).json({ mensagem: 'Senha deve ter ao menos 6 caracteres.' });
+      }
+      u.senhaHash = String(senha);
+    }
+
+    await u.save();
+
+    return res.json({ mensagem: 'Perfil atualizado!', usuario: sanitize(u) });
+  } catch (err) {
+    console.error('Erro em /api/perfil/atualizar:', err);
+    return res.status(500).json({ mensagem: 'Erro ao atualizar perfil.' });
   }
 });
 
@@ -1071,9 +1133,6 @@ app.post('/api/shelf/remove', async (req, res) => {
 // ================================================================
 // ============ NOVO: ADICIONAR LIVRO MANUALMENTE =================
 // ================================================================
-/* POST /api/shelf/add-manual
-   Cadastra um livro que NÃO foi encontrado na Google Books API.
-   Exige: title, authors[], publishedDate, categories[]. */
 app.post('/api/shelf/add-manual', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
@@ -1089,7 +1148,6 @@ app.post('/api/shelf/add-manual', async (req, res) => {
       status
     } = req.body;
 
-    // ---------- VALIDAÇÃO RIGOROSA ----------
     const erros = [];
 
     if (!title || typeof title !== 'string' || title.trim().length < 2) {
@@ -1118,18 +1176,15 @@ app.post('/api/shelf/add-manual', async (req, res) => {
       return res.status(400).json({ mensagem: 'Dados inválidos.', erros });
     }
 
-    // ---------- volumeId ÚNICO baseado no ISBN ----------
     const volumeId = isbn && String(isbn).trim()
       ? `manual-${String(isbn).trim()}`
       : `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-    // ---------- VERIFICA DUPLICATA NA ESTANTE ----------
     const exists = await ShelfItem.findOne({ userId: req.user._id, volumeId });
     if (exists) {
       return res.status(400).json({ mensagem: 'Este livro já está na sua estante.' });
     }
 
-    // ---------- CRIA O ITEM NA ESTANTE ----------
     const item = await ShelfItem.create({
       userId: req.user._id,
       volumeId,
@@ -1144,8 +1199,6 @@ app.post('/api/shelf/add-manual', async (req, res) => {
       manual: true
     });
 
-    // ---------- CACHE GLOBAL (BookSnapshot) ----------
-    // Assim se outro usuário buscar o mesmo ISBN depois, já encontra
     if (isbn && String(isbn).trim()) {
       try {
         await BookSnapshot.findOneAndUpdate(
