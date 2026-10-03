@@ -222,6 +222,7 @@ const ShelfItemSchema = new mongoose.Schema({
   currentChapter: { type: String, default: '' },
   reactions: { type: [String], default: [] },
   userRating: { type: Number, default: null, min: 0, max: 10 },
+  manual: { type: Boolean, default: false },
   addedAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
@@ -927,6 +928,7 @@ app.get('/api/shelf', async (req, res) => {
       currentChapter: i.currentChapter,
       reactions: i.reactions || [],
       userRating: i.userRating,
+      manual: i.manual || false,
       addedAt: i.addedAt,
       updatedAt: i.updatedAt
     }));
@@ -1063,6 +1065,115 @@ app.post('/api/shelf/remove', async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ mensagem: 'Erro ao remover livro da estante.' });
+  }
+});
+
+// ================================================================
+// ============ NOVO: ADICIONAR LIVRO MANUALMENTE =================
+// ================================================================
+/* POST /api/shelf/add-manual
+   Cadastra um livro que NÃO foi encontrado na Google Books API.
+   Exige: title, authors[], publishedDate, categories[]. */
+app.post('/api/shelf/add-manual', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
+
+    const {
+      isbn,
+      title,
+      authors,
+      publishedDate,
+      categories,
+      thumbnail,
+      description,
+      status
+    } = req.body;
+
+    // ---------- VALIDAÇÃO RIGOROSA ----------
+    const erros = [];
+
+    if (!title || typeof title !== 'string' || title.trim().length < 2) {
+      erros.push('Título é obrigatório (mínimo 2 caracteres).');
+    }
+    if (!Array.isArray(authors) || authors.length === 0 || !authors.some(a => a && a.trim().length >= 2)) {
+      erros.push('Pelo menos um autor é obrigatório.');
+    }
+    if (!publishedDate || !String(publishedDate).trim()) {
+      erros.push('Ano de publicação é obrigatório.');
+    } else {
+      const ano = parseInt(String(publishedDate).split('-')[0], 10);
+      const anoAtual = new Date().getFullYear();
+      if (isNaN(ano) || ano < 1400 || ano > anoAtual + 1) {
+        erros.push(`Ano deve ser entre 1400 e ${anoAtual + 1}.`);
+      }
+    }
+    if (!Array.isArray(categories) || categories.length === 0 || !categories.some(c => c && c.trim().length >= 2)) {
+      erros.push('Pelo menos um gênero é obrigatório.');
+    }
+
+    const STATUS_VALIDOS = ['quero', 'lendo', 'terminei', 'pausei', 'desisti'];
+    const statusFinal = STATUS_VALIDOS.includes(status) ? status : 'quero';
+
+    if (erros.length) {
+      return res.status(400).json({ mensagem: 'Dados inválidos.', erros });
+    }
+
+    // ---------- volumeId ÚNICO baseado no ISBN ----------
+    const volumeId = isbn && String(isbn).trim()
+      ? `manual-${String(isbn).trim()}`
+      : `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    // ---------- VERIFICA DUPLICATA NA ESTANTE ----------
+    const exists = await ShelfItem.findOne({ userId: req.user._id, volumeId });
+    if (exists) {
+      return res.status(400).json({ mensagem: 'Este livro já está na sua estante.' });
+    }
+
+    // ---------- CRIA O ITEM NA ESTANTE ----------
+    const item = await ShelfItem.create({
+      userId: req.user._id,
+      volumeId,
+      title: String(title).trim(),
+      authors: authors.map(a => String(a).trim()).filter(Boolean),
+      thumbnail: thumbnail ? String(thumbnail).trim() : '',
+      publishedDate: String(publishedDate).trim(),
+      categories: categories.map(c => String(c).trim()).filter(Boolean),
+      description: description ? String(description).trim() : '',
+      isbn: isbn ? String(isbn).trim() : '',
+      status: statusFinal,
+      manual: true
+    });
+
+    // ---------- CACHE GLOBAL (BookSnapshot) ----------
+    // Assim se outro usuário buscar o mesmo ISBN depois, já encontra
+    if (isbn && String(isbn).trim()) {
+      try {
+        await BookSnapshot.findOneAndUpdate(
+          { volumeId },
+          {
+            volumeId,
+            title: item.title,
+            authors: item.authors,
+            description: item.description,
+            categories: item.categories,
+            thumbnail: item.thumbnail,
+            publishedDate: item.publishedDate,
+            industryIdentifiers: [{ type: 'ISBN_13', identifier: String(isbn).trim() }]
+          },
+          { upsert: true, new: true }
+        );
+      } catch (e) {
+        console.warn('Erro ao salvar snapshot do livro manual:', e.message);
+      }
+    }
+
+    return res.status(201).json({
+      mensagem: 'Livro cadastrado manualmente com sucesso!',
+      item
+    });
+  } catch (err) {
+    console.error('Erro em /api/shelf/add-manual:', err);
+    return res.status(500).json({ mensagem: 'Erro ao cadastrar livro manualmente.' });
   }
 });
 

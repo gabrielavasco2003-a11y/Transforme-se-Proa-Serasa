@@ -125,6 +125,120 @@
         </div>
     </section>
 
+    <!-- ===================== FORMULÁRIO MANUAL ===================== -->
+<section id="manual-section" class="manual-section hidden" hidden>
+    <h2>✍️ Cadastrar livro manualmente</h2>
+    <p class="manual-hint">
+        A API não encontrou esse ISBN. Preencha os dados abaixo com atenção —
+        os campos com <strong>*</strong> são obrigatórios.
+    </p>
+
+    <form id="manual-form" class="manual-form" novalidate>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="manual-isbn">ISBN</label>
+                <input type="text" id="manual-isbn" readonly>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="manual-title">Título *</label>
+                <input
+                    type="text"
+                    id="manual-title"
+                    placeholder="Ex: Dom Casmurro"
+                    required
+                    minlength="2"
+                    maxlength="200"
+                >
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="manual-author">Autor(es) *</label>
+                <input
+                    type="text"
+                    id="manual-author"
+                    placeholder="Ex: Machado de Assis (separe múltiplos com vírgula)"
+                    required
+                    minlength="2"
+                    maxlength="200"
+                >
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="manual-year">Ano de publicação *</label>
+                <input
+                    type="number"
+                    id="manual-year"
+                    placeholder="Ex: 1899"
+                    required
+                    min="1400"
+                    max="2100"
+                >
+            </div>
+            <div class="form-group">
+                <label for="manual-genre">Gênero(s) *</label>
+                <input
+                    type="text"
+                    id="manual-genre"
+                    placeholder="Ex: Romance, Ficção"
+                    required
+                    minlength="2"
+                    maxlength="200"
+                >
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="manual-cover">URL da capa (opcional)</label>
+                <input
+                    type="url"
+                    id="manual-cover"
+                    placeholder="https://..."
+                >
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="manual-desc">Descrição (opcional)</label>
+                <textarea
+                    id="manual-desc"
+                    placeholder="Sinopse ou resumo do livro..."
+                    rows="4"
+                    maxlength="2000"
+                ></textarea>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="manual-status">Status de leitura</label>
+                <select id="manual-status">
+                    <option value="quero">Quero ler</option>
+                    <option value="lendo">Lendo</option>
+                    <option value="terminei">Terminei</option>
+                    <option value="pausei">Pausei</option>
+                    <option value="desisti">Desisti</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="manual-errors" class="manual-errors hidden" hidden></div>
+
+        <div class="form-actions">
+            <button type="submit" id="btn-manual-save" class="btn-primary">Salvar na Estante</button>
+            <button type="button" id="btn-manual-cancel" class="btn-secondary">Cancelar</button>
+        </div>
+    </form>
+</section>
     <!-- ===================== FEEDBACK ===================== -->
     <div id="feedback" class="feedback hidden" hidden></div>
 
