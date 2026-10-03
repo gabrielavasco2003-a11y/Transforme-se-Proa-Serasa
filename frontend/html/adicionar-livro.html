@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Termos e serviços — Spoiler Esperado</title>
+    <title>Adicionar Livro — Spoiler Esperado</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/institucional.css">
+    <link rel="stylesheet" href="/css/adicionar-livro.css">
 </head>
 <body>
 
@@ -70,7 +70,6 @@
                     "
                 >✕</button>
             </li>
-            <li role="none"><a href="/adicionar-livro.html" role="menuitem">➕ Adicionar Livro</a></li>
             <li role="none"><a href="/shelf.html" role="menuitem">Minha Estante</a></li>
             <li role="none"><a href="/perfil.html" role="menuitem">Meu Perfil</a></li>
             <li role="none"><a href="/editar-perfil.html" role="menuitem">Editar Perfil</a></li>
@@ -80,21 +79,58 @@
     </nav>
 </header>
 
-<main class="institucional">
-    <section class="institucional-card">
-        <h1>Termos e serviços</h1>
+<main class="add-book-main">
+    <section class="add-book-hero">
+        <h1>➕ Adicionar Livro por ISBN</h1>
+        <p>Não encontrou na busca? Digite o ISBN e adicione direto à sua estante.</p>
+    </section>
 
-        <!-- ====================================================== -->
-        <!-- ESCREVA O CONTEÚDO AQUI -->
-        <!-- ====================================================== -->
+    <!-- ===================== FORMULÁRIO DE BUSCA ===================== -->
+    <section class="isbn-search-section">
+        <form id="isbn-form" class="isbn-form">
+            <label for="isbn-input" class="sr-only">ISBN do livro</label>
+            <input
+                type="text"
+                id="isbn-input"
+                placeholder="Ex: 9788535902778 ou 978-85-359-0277-8"
+                aria-label="ISBN do livro"
+                autocomplete="off"
+                inputmode="numeric"
+            >
+            <button type="submit" id="isbn-search-btn">🔍 Buscar</button>
+        </form>
+        <p class="isbn-hint">O ISBN geralmente fica na contracapa, atrás do código de barras.</p>
+    </section>
 
-        <p>Conteúdo em construção.</p>
+    <!-- ===================== RESULTADO / STATUS ===================== -->
+    <section id="result-section" class="result-section hidden" hidden>
+        <div id="result-card" class="result-card"></div>
 
-        <!-- ====================================================== -->
+        <div class="add-controls">
+            <div class="form-group">
+                <label for="add-status">Status de leitura</label>
+                <select id="add-status">
+                    <option value="quero">Quero ler</option>
+                    <option value="lendo">Lendo</option>
+                    <option value="terminei">Terminei</option>
+                    <option value="pausei">Pausei</option>
+                    <option value="desisti">Desisti</option>
+                </select>
+            </div>
 
-        <div class="institucional-actions">
-            <a href="/index.html" class="btn-voltar">← Voltar para o início</a>
+            <div class="form-actions">
+                <button type="button" id="btn-add-shelf" class="btn-primary">Adicionar à Estante</button>
+                <button type="button" id="btn-cancel" class="btn-secondary">Cancelar</button>
+            </div>
         </div>
+    </section>
+
+    <!-- ===================== FEEDBACK ===================== -->
+    <div id="feedback" class="feedback hidden" hidden></div>
+
+    <!-- ===================== ESTADO INICIAL ===================== -->
+    <section id="empty-state" class="empty-state">
+        <p>🔎 Digite um ISBN acima para começar.</p>
     </section>
 </main>
 
@@ -112,6 +148,6 @@
 
 <script src="/js/offline.js"></script>
 <script src="/js/script.js"></script>
-<script src="/js/institucional.js"></script>
+<script src="/js/adicionar-livro.js"></script>
 </body>
 </html>

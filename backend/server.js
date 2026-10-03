@@ -145,6 +145,10 @@ app.get('/fale-conosco',              (req, res) => sendHtmlFile('fale-conosco.h
 app.get('/conquistas.html',           (req, res) => sendHtmlFile('conquistas.html', res));
 app.get('/conquistas',                (req, res) => sendHtmlFile('conquistas.html', res));
 
+// ---------- ADICIONAR LIVRO ----------
+app.get('/adicionar-livro.html', (req, res) => sendHtmlFile('adicionar-livro.html', res));
+app.get('/adicionar-livro',      (req, res) => sendHtmlFile('adicionar-livro.html', res));
+
 // ---------- MONGO ----------
 const MONGO_URI = process.env.MONGO_URI;
 
