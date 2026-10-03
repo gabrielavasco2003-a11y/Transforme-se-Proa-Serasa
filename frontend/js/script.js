@@ -10,7 +10,6 @@
 const IMG_FALLBACK = '/img/sem-capa.jpg';
 
 /* ================= UTILITÁRIO SEGURO ================= */
-/* Executa fn() e captura qualquer erro sem travar o resto do script */
 function safeRun(label, fn) {
   try {
     const r = fn();
@@ -224,17 +223,6 @@ async function checarSessao() {
       });
     }
 
-    // Botão X para fechar o dropdown
-    const fecharBtn = document.getElementById('fechar-dropdown');
-    if (fecharBtn && !fecharBtn.dataset.bound) {
-      fecharBtn.dataset.bound = 'true';
-      fecharBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        fecharDropdown();
-      });
-    }
-
     // Logout (evita duplicação com dataset)
     if (logoutBtn && !logoutBtn.dataset.bound) {
       logoutBtn.dataset.bound = 'true';
@@ -262,15 +250,35 @@ async function checarSessao() {
   }
 }
 
-/* ================= FECHAR DROPDOWN AO CLICAR FORA ================= */
-safeRun('fechar dropdown (click fora)', () => {
+/* ================= CLIQUE GLOBAL (fechar fora + botão X) ================= */
+/*
+   Um único listener de clique no document resolve os dois casos:
+   1. Se clicou no X → fecha o dropdown
+   2. Se clicou fora do menu → fecha o dropdown
+   3. Se clicou dentro do menu (mas não no X) → não faz nada
+*/
+safeRun('click global do header', () => {
   document.addEventListener('click', (e) => {
     const userMenu = document.getElementById('user-menu');
     const dropdown = document.getElementById('dropdown');
 
     if (!userMenu || !dropdown) return;
-    if (userMenu.contains(e.target)) return;
 
+    // 1. Clique no botão X?
+    if (e.target.closest('#fechar-dropdown')) {
+      e.preventDefault();
+      e.stopPropagation();
+      fecharDropdown();
+      return;
+    }
+
+    // 2. Clique dentro do menu (mas não no X)?
+    if (userMenu.contains(e.target)) {
+      // Ignora — deixa o listener do avatar cuidar
+      return;
+    }
+
+    // 3. Clique fora do menu → fecha
     fecharDropdown();
   });
 });
