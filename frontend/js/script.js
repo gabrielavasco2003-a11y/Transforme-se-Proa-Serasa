@@ -82,7 +82,7 @@ function getLivrosDiv(sectionName) {
 
 async function carregarEmAlta() {
   const div = getLivrosDiv('em-alta');
-  if (!div) return; // se não existir nesta página, sai silenciosamente
+  if (!div) return;
   div.innerHTML = '<p class="carregando">Carregando...</p>';
   try {
     const response = await fetch('/api/books/em-alta');
@@ -150,8 +150,6 @@ async function carregarNovos() {
 }
 
 /* ================= SESSÃO / LOGIN PERSISTENTE ================= */
-let _sessionBound = false; // evita duplicar listeners se checarSessao rodar 2x
-
 async function checarSessao() {
   const navVisitante = document.getElementById('nav-visitante');
   const userMenu     = document.getElementById('user-menu');
@@ -160,7 +158,6 @@ async function checarSessao() {
   const dropdown     = document.getElementById('dropdown');
   const logoutBtn    = document.getElementById('logout');
 
-  // Se esta página não tem header (raro), sai
   if (!navVisitante && !userMenu) return;
 
   let user = null;
@@ -186,37 +183,30 @@ async function checarSessao() {
       avatarInit.textContent = String(nome).trim().charAt(0).toUpperCase() || '?';
     }
 
-    if (!_sessionBound) {
-      _sessionBound = true;
+    // Reanexa o clique do avatar de forma limpa (evita duplicação de listeners)
+    if (avatar && dropdown) {
+      const novoAvatar = avatar.cloneNode(true);
+      avatar.parentNode.replaceChild(novoAvatar, avatar);
 
-      // Alternar dropdown
-      if (avatar && dropdown) {
-        avatar.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const aberto = !dropdown.classList.contains('hidden');
-          dropdown.classList.toggle('hidden', aberto);
-          dropdown.hidden = aberto;
-          avatar.setAttribute('aria-expanded', String(!aberto));
-        });
-        document.addEventListener('click', (e) => {
-          if (userMenu && !userMenu.contains(e.target)) {
-            dropdown.classList.add('hidden');
-            dropdown.hidden = true;
-            avatar.setAttribute('aria-expanded', 'false');
-          }
-        });
-      }
+      novoAvatar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const estaAberto = !dropdown.classList.contains('hidden');
+        dropdown.classList.toggle('hidden', estaAberto);
+        dropdown.hidden = estaAberto;
+        novoAvatar.setAttribute('aria-expanded', String(!estaAberto));
+      });
+    }
 
-      // Logout
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', async (e) => {
-          e.preventDefault();
-          try {
-            await fetch('/api/logout', { credentials: 'same-origin' });
-          } catch (_) { /* ignora */ }
-          window.location.href = '/index.html';
-        });
-      }
+    // Logout (evita duplicação com dataset)
+    if (logoutBtn && !logoutBtn.dataset.bound) {
+      logoutBtn.dataset.bound = 'true';
+      logoutBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          await fetch('/api/logout', { credentials: 'same-origin' });
+        } catch (_) { /* ignora */ }
+        window.location.href = '/index.html';
+      });
     }
   } else {
     // ---- VISITANTE ----
@@ -230,17 +220,48 @@ async function checarSessao() {
       userMenu.classList.add('hidden');
       userMenu.style.display = 'none';
     }
+    if (dropdown) {
+      dropdown.classList.add('hidden');
+      dropdown.hidden = true;
+    }
   }
 }
 
+/* ================= FECHAR DROPDOWN AO CLICAR FORA ================= */
+/* Roda sempre, em qualquer página, com ou sem login. */
+document.addEventListener('click', (e) => {
+  const userMenu = document.getElementById('user-menu');
+  const dropdown = document.getElementById('dropdown');
+  const avatar   = document.getElementById('avatar');
+
+  if (!userMenu || !dropdown) return;
+
+  // Se o clique foi dentro do menu (avatar ou dropdown), ignora
+  if (userMenu.contains(e.target)) return;
+
+  // Fora do menu → fecha
+  dropdown.classList.add('hidden');
+  dropdown.hidden = true;
+  if (avatar) avatar.setAttribute('aria-expanded', 'false');
+});
+
+/* Fechar com ESC (acessibilidade) */
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const dropdown = document.getElementById('dropdown');
+  const avatar   = document.getElementById('avatar');
+  if (dropdown) {
+    dropdown.classList.add('hidden');
+    dropdown.hidden = true;
+  }
+  if (avatar) avatar.setAttribute('aria-expanded', 'false');
+});
+
 /* ================= INICIALIZAÇÃO SEGURA ================= */
 function init() {
-  // Carrega seções (só rodam se existirem)
   carregarEmAlta();
   carregarJabuti();
   carregarNovos();
-
-  // Toggle de login/visitante
   checarSessao();
 }
 
