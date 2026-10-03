@@ -36,7 +36,7 @@
         </ul>
     </nav>
 
-    <!-- Menu do usuário logado (escondido por padrão; JS mostra se logado) -->
+    <!-- Menu do usuário logado -->
     <nav id="user-menu" class="hidden" hidden aria-label="Menu do usuário">
         <button
             id="avatar"
@@ -46,8 +46,8 @@
             aria-controls="dropdown"
             aria-label="Abrir menu do usuário"
             onclick="
+                if (event.target !== this) return;
                 event.preventDefault();
-                event.stopPropagation();
                 var d = document.getElementById('dropdown');
                 var a = document.getElementById('avatar');
                 if (!d) return;
