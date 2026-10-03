@@ -7,8 +7,8 @@ body, h1, h2, p, ul, li {
 /* Fonte Verdana */
 body {
     font-family: Verdana, sans-serif;
-    background-color: #FCF4E9; /* off-white da paleta */
-    color: #162745; /* navy escuro para texto */
+    background-color: #FCF4E9;
+    color: #162745;
 }
 
 /* Cabeçalho */
@@ -16,10 +16,10 @@ header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: #C09E68; 
+    background-color: #C09E68;
     color: #fff;
     padding: 10px 20px;
-    position: relative; /* necessário para posicionar o user-menu */
+    position: relative;
 }
 
 /* Logo */
@@ -49,22 +49,22 @@ header {
 #search-form button {
     padding: 6px 12px;
     cursor: pointer;
-    background-color: #B89764; /* dourado */
+    background-color: #B89764;
     border: none;
     color: #fff;
     border-radius: 5px;
 }
 
 /* Navegação */
-nav ul { 
-    list-style: none; 
-    display: flex; 
-    gap: 15px; 
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 15px;
 }
-nav a { 
-    text-decoration: none; 
-    color: #FCF4E9; 
-    font-weight: bold; 
+nav a {
+    text-decoration: none;
+    color: #FCF4E9;
+    font-weight: bold;
 }
 
 /* --- Menu do usuário --- */
@@ -124,7 +124,7 @@ nav a {
     display: none;
 }
 
-/* Acessibilidade: esconde visualmente mas mantém para leitores de tela */
+/* Acessibilidade */
 .sr-only {
     position: absolute;
     width: 1px;
@@ -138,33 +138,31 @@ nav a {
 }
 
 /* Banner */
-#banner { 
-    background-color: #E4D0B1; 
-    padding: 40px 20px; 
+#banner {
+    background-color: #E4D0B1;
+    padding: 40px 20px;
 }
 
-.banner-content { 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 30px; 
+.banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
 }
 
-/* Logo */
-.banner-logo img { 
-    height: 120px; 
+.banner-logo img {
+    height: 120px;
     width: auto;
 }
 
-/* Mascote */
-.banner-mascote img { 
-    height: 200px; 
+.banner-mascote img {
+    height: 200px;
 }
 
 /* Seções de livros */
-.livros-section { 
-    position: relative; 
-    margin: 30px 20px; 
+.livros-section {
+    position: relative;
+    margin: 30px 20px;
 }
 
 .livros-section h2 {
@@ -194,22 +192,22 @@ nav a {
     transition: transform 0.2s ease;
 }
 
-.livros article:hover { 
-    transform: scale(1.05); 
+.livros article:hover {
+    transform: scale(1.05);
 }
 
-.livros img { 
-    width: 100%; 
-    height: 220px; 
-    object-fit: cover; 
-    border-radius: 6px; 
-    margin-bottom: 8px; 
+.livros img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 8px;
 }
 
-.titulo { 
-    font-weight: bold; 
-    margin-bottom: 5px; 
-    color: #2A587D; 
+.titulo {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #2A587D;
     font-size: 0.9em;
     line-height: 1.2em;
     max-height: 2.4em;
@@ -217,9 +215,9 @@ nav a {
 }
 
 /* Estrelas */
-.estrelas { 
+.estrelas {
     font-size: 1.2em;
-    color: #FFD700; 
+    color: #FFD700;
     margin-bottom: 4px;
 }
 

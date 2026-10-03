@@ -3,34 +3,39 @@
    + leitura do parâmetro ?q= vindo do index.html
    + proxy via backend (/api/books/search) — a chave NÃO fica no front */
 
-const API_BASE = "/api/books/search";            // 👈 backend, não o Google
-const CATEGORIES_URL = "../data/categories.json"; // html/ → ../data/
+const API_BASE = "/api/books/search";
+const CATEGORIES_URL = "/data/categories.json";
 
+/* ---------- helper seguro para pegar elementos ---------- */
+const $ = (id) => document.getElementById(id);
+
+/* ---------- mapa de elementos do DOM ---------- */
 const dom = {
-  searchForm: document.getElementById("search-form"),
-  searchInput: document.getElementById("search-input"),
-  searchButton: document.getElementById("search-button"),
-  booksContainer: document.getElementById("books-container"),
-  loading: document.getElementById("loading"),
-  noResults: document.getElementById("no-results"),
-  ratingFilter: document.getElementById("rating-filter"),
-  categorySearch: document.getElementById("category-search"),
-  addCategoryBtn: document.getElementById("add-category"),
-  includeCategoriesList: document.getElementById("include-categories"),
-  categorySuggestions: document.getElementById("category-suggestions"),
-  excludeSearch: document.getElementById("exclude-search"),
-  addExcludeBtn: document.getElementById("add-exclude"),
-  excludeCategoriesList: document.getElementById("exclude-categories"),
-  excludeSuggestions: document.getElementById("exclude-suggestions"),
-  authorFilter: document.getElementById("author-filter"),
-  yearFilter: document.getElementById("year-filter"),
-  applyFiltersBtn: document.getElementById("apply-filters"),
-  clearFiltersBtn: document.getElementById("clear-filters"),
-  topCategoryName: document.getElementById("top-category-name"),
-  resultsTitle: document.getElementById("results-title")
+  searchForm:            $("search-form"),
+  searchInput:           $("search-input"),
+  searchButton:          $("search-button"),
+  booksContainer:        $("books-container"),
+  loading:               $("loading"),
+  noResults:             $("no-results"),
+  ratingFilter:          $("rating-filter"),
+  categorySearch:        $("category-search"),
+  addCategoryBtn:        $("add-category"),
+  includeCategoriesList: $("include-categories"),
+  categorySuggestions:   $("category-suggestions"),
+  excludeSearch:         $("exclude-search"),
+  addExcludeBtn:         $("add-exclude"),
+  excludeCategoriesList: $("exclude-categories"),
+  excludeSuggestions:    $("exclude-suggestions"),
+  authorFilter:          $("author-filter"),
+  yearFilter:            $("year-filter"),
+  applyFiltersBtn:       $("apply-filters"),
+  clearFiltersBtn:       $("clear-filters"),
+  topCategoryName:       $("top-category-name"),
+  resultsTitle:          $("results-title")
 };
 
-let state = {
+/* ---------- estado ---------- */
+const state = {
   query: "",
   rating: 0,
   includeCategories: [],
@@ -87,7 +92,7 @@ function toApiCategoryList(displayCat) {
 }
 
 /* ================= util: debounce ================= */
-function debounce(fn, wait = 350){
+function debounce(fn, wait = 350) {
   let t;
   return (...args) => {
     clearTimeout(t);
@@ -101,8 +106,7 @@ async function fetchBooksRaw(q, params = {}) {
   url.searchParams.set("q", q);
   url.searchParams.set("maxResults", String(params.maxResults || 20));
   if (params.startIndex) url.searchParams.set("startIndex", String(params.startIndex));
-  if (params.orderBy) url.searchParams.set("orderBy", params.orderBy);
-  // ❌ NÃO envia "key" — o backend cuida disso
+  if (params.orderBy)    url.searchParams.set("orderBy", params.orderBy);
 
   const res = await fetch(url.toString(), { credentials: "same-origin" });
 
@@ -180,19 +184,23 @@ function filterAndNormalize(items) {
 
 /* ================= render ================= */
 function renderBooks(items) {
+  if (!dom.booksContainer) return;
   dom.booksContainer.innerHTML = "";
-  dom.noResults.hidden = true;
+  if (dom.noResults) dom.noResults.hidden = true;
+
   if (!items.length) {
-    dom.noResults.hidden = false;
+    if (dom.noResults) dom.noResults.hidden = false;
     return;
   }
+
   items.forEach(b => {
     const el = document.createElement("article");
     el.className = "book";
-    const href = b.id ? `book.html?volumeId=${encodeURIComponent(b.id)}` : "#";
+    const href = b.id ? `/book.html?volumeId=${encodeURIComponent(b.id)}` : "#";
     const cats = b.categories.length
       ? b.categories.map(c => `<span>${escapeHtml(c)}</span>`).join("")
       : `<span>Outros</span>`;
+
     el.innerHTML = `
       <a href="${href}" class="book-link">
         <img src="${b.thumbnail}" alt="${escapeHtml(b.title)}" />
@@ -211,32 +219,40 @@ function renderBooks(items) {
 }
 
 /* ================= helpers ================= */
-function renderStars(rating){
+function renderStars(rating) {
   const r = Math.round(rating);
   return "★".repeat(r) + "☆".repeat(5 - r);
 }
-function truncate(text, n){ return text ? (text.length > n ? text.slice(0,n) + "..." : text) : "Sem descrição"; }
-function escapeHtml(str){ return String(str || "").replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+function truncate(text, n) {
+  return text ? (text.length > n ? text.slice(0, n) + "..." : text) : "Sem descrição";
+}
+function escapeHtml(str) {
+  return String(str || "").replace(/[&<>"']/g, s => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]
+  ));
+}
 
 /* ================= UI: lista de categorias ================= */
-function renderCategoryLists(){
-  dom.includeCategoriesList.innerHTML = "";
-  dom.excludeCategoriesList.innerHTML = "";
+function renderCategoryLists() {
+  if (dom.includeCategoriesList) dom.includeCategoriesList.innerHTML = "";
+  if (dom.excludeCategoriesList) dom.excludeCategoriesList.innerHTML = "";
 
   state.includeCategories.forEach(cat => {
+    if (!dom.includeCategoriesList) return;
     const li = document.createElement("li");
     li.innerHTML = `${escapeHtml(cat)} <button aria-label="remover ${escapeHtml(cat)}" data-cat="${escapeHtml(cat)}" data-type="include">✕</button>`;
     dom.includeCategoriesList.appendChild(li);
   });
 
   state.excludeCategories.forEach(cat => {
+    if (!dom.excludeCategoriesList) return;
     const li = document.createElement("li");
     li.innerHTML = `${escapeHtml(cat)} <button aria-label="remover ${escapeHtml(cat)}" data-cat="${escapeHtml(cat)}" data-type="exclude">✕</button>`;
     dom.excludeCategoriesList.appendChild(li);
   });
 }
 
-function addCategory(cat, type = "include"){
+function addCategory(cat, type = "include") {
   if (!cat) return;
   cat = cat.trim();
   if (!cat) return;
@@ -248,6 +264,7 @@ function addCategory(cat, type = "include"){
   renderCategoryLists();
 }
 
+/* remover categoria via delegacão de evento */
 document.addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-cat]");
   if (!btn) return;
@@ -259,28 +276,29 @@ document.addEventListener("click", (e) => {
     state.excludeCategories = state.excludeCategories.filter(c => c !== cat);
   }
   renderCategoryLists();
-  performSearch(state.query || dom.searchInput.value || "");
+  performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
 });
 
 /* ================= sugestões ================= */
-function showSuggestions(container, items){
+function showSuggestions(container, items) {
+  if (!container) return;
   container.innerHTML = "";
   if (!items || !items.length) { container.hidden = true; return; }
-  items.slice(0,10).forEach(i => {
+  items.slice(0, 10).forEach(i => {
     const div = document.createElement("div");
     div.textContent = i;
     div.addEventListener("click", () => {
       if (container === dom.categorySuggestions) addCategory(i, "include");
       else addCategory(i, "exclude");
       container.hidden = true;
-      performSearch(state.query || dom.searchInput.value || "");
+      performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
     });
     container.appendChild(div);
   });
   container.hidden = false;
 }
 
-function suggestCategoriesFromInput(inputValue){
+function suggestCategoriesFromInput(inputValue) {
   const q = (inputValue || "").toLowerCase().trim();
   const all = Object.keys(categoryMap);
   if (!q) return all.slice(0, 12);
@@ -288,97 +306,119 @@ function suggestCategoriesFromInput(inputValue){
 }
 
 /* ================= rating filter ================= */
-dom.ratingFilter.addEventListener("click", (e) => {
-  const btn = e.target.closest(".star-btn");
-  if (!btn) return;
+if (dom.ratingFilter) {
+  dom.ratingFilter.addEventListener("click", (e) => {
+    const btn = e.target.closest(".star-btn");
+    if (!btn) return;
 
-  const val = Number(btn.dataset.value);
-  state.rating = (state.rating === val) ? 0 : val;
+    const val = Number(btn.dataset.value);
+    state.rating = (state.rating === val) ? 0 : val;
 
-  dom.ratingFilter.querySelectorAll(".star-btn").forEach(b => {
-    const v = Number(b.dataset.value);
-    const active = v <= state.rating;
-    b.classList.toggle("active", active);
-    b.setAttribute("aria-pressed", active ? "true" : "false");
+    dom.ratingFilter.querySelectorAll(".star-btn").forEach(b => {
+      const v = Number(b.dataset.value);
+      const active = v <= state.rating;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
   });
-
-  performSearch(state.query || dom.searchInput.value || "");
-});
+}
 
 /* ================= inputs de categoria ================= */
-dom.categorySearch.addEventListener("input", debounce((e) => {
-  showSuggestions(dom.categorySuggestions, suggestCategoriesFromInput(e.target.value));
-}, 150));
+if (dom.categorySearch) {
+  dom.categorySearch.addEventListener("input", debounce((e) => {
+    showSuggestions(dom.categorySuggestions, suggestCategoriesFromInput(e.target.value));
+  }, 150));
 
-dom.excludeSearch.addEventListener("input", debounce((e) => {
-  showSuggestions(dom.excludeSuggestions, suggestCategoriesFromInput(e.target.value));
-}, 150));
+  dom.categorySearch.addEventListener("focus", () => {
+    showSuggestions(dom.categorySuggestions, suggestCategoriesFromInput(dom.categorySearch.value));
+  });
+}
 
-dom.categorySearch.addEventListener("focus", () => {
-  showSuggestions(dom.categorySuggestions, suggestCategoriesFromInput(dom.categorySearch.value));
-});
-dom.excludeSearch.addEventListener("focus", () => {
-  showSuggestions(dom.excludeSuggestions, suggestCategoriesFromInput(dom.excludeSearch.value));
-});
+if (dom.excludeSearch) {
+  dom.excludeSearch.addEventListener("input", debounce((e) => {
+    showSuggestions(dom.excludeSuggestions, suggestCategoriesFromInput(e.target.value));
+  }, 150));
 
-dom.addCategoryBtn.addEventListener("click", () => {
-  addCategory(dom.categorySearch.value, "include");
-  dom.categorySearch.value = "";
-  dom.categorySuggestions.hidden = true;
-  performSearch(state.query || dom.searchInput.value || "");
-});
+  dom.excludeSearch.addEventListener("focus", () => {
+    showSuggestions(dom.excludeSuggestions, suggestCategoriesFromInput(dom.excludeSearch.value));
+  });
+}
 
-dom.addExcludeBtn.addEventListener("click", () => {
-  addCategory(dom.excludeSearch.value, "exclude");
-  dom.excludeSearch.value = "";
-  dom.excludeSuggestions.hidden = true;
-  performSearch(state.query || dom.searchInput.value || "");
-});
+if (dom.addCategoryBtn) {
+  dom.addCategoryBtn.addEventListener("click", () => {
+    addCategory(dom.categorySearch ? dom.categorySearch.value : "", "include");
+    if (dom.categorySearch) dom.categorySearch.value = "";
+    if (dom.categorySuggestions) dom.categorySuggestions.hidden = true;
+    performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
+  });
+}
+
+if (dom.addExcludeBtn) {
+  dom.addExcludeBtn.addEventListener("click", () => {
+    addCategory(dom.excludeSearch ? dom.excludeSearch.value : "", "exclude");
+    if (dom.excludeSearch) dom.excludeSearch.value = "";
+    if (dom.excludeSuggestions) dom.excludeSuggestions.hidden = true;
+    performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
+  });
+}
 
 /* ================= apply / clear ================= */
-dom.applyFiltersBtn.addEventListener("click", () => {
-  state.author = dom.authorFilter.value.trim();
-  state.year = dom.yearFilter.value ? String(dom.yearFilter.value) : "";
-  performSearch(state.query || dom.searchInput.value || "");
-});
-
-dom.clearFiltersBtn.addEventListener("click", () => {
-  state.rating = 0;
-  state.includeCategories = [];
-  state.excludeCategories = [];
-  state.author = "";
-  state.year = "";
-  dom.authorFilter.value = "";
-  dom.yearFilter.value = "";
-  dom.categorySearch.value = "";
-  dom.excludeSearch.value = "";
-  renderCategoryLists();
-  dom.ratingFilter.querySelectorAll(".star-btn").forEach(b => {
-    b.classList.remove("active");
-    b.setAttribute("aria-pressed", "false");
+if (dom.applyFiltersBtn) {
+  dom.applyFiltersBtn.addEventListener("click", () => {
+    state.author = dom.authorFilter ? dom.authorFilter.value.trim() : "";
+    state.year = dom.yearFilter && dom.yearFilter.value ? String(dom.yearFilter.value) : "";
+    performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
   });
-  performSearch("");
-});
+}
+
+if (dom.clearFiltersBtn) {
+  dom.clearFiltersBtn.addEventListener("click", () => {
+    state.rating = 0;
+    state.includeCategories = [];
+    state.excludeCategories = [];
+    state.author = "";
+    state.year = "";
+    if (dom.authorFilter) dom.authorFilter.value = "";
+    if (dom.yearFilter) dom.yearFilter.value = "";
+    if (dom.categorySearch) dom.categorySearch.value = "";
+    if (dom.excludeSearch) dom.excludeSearch.value = "";
+    renderCategoryLists();
+    if (dom.ratingFilter) {
+      dom.ratingFilter.querySelectorAll(".star-btn").forEach(b => {
+        b.classList.remove("active");
+        b.setAttribute("aria-pressed", "false");
+      });
+    }
+    performSearch("");
+  });
+}
 
 /* ================= form / live search ================= */
-dom.searchForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const q = dom.searchInput.value.trim();
-  state.query = q;
-  performSearch(q);
-});
+if (dom.searchForm) {
+  dom.searchForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const q = dom.searchInput ? dom.searchInput.value.trim() : "";
+    state.query = q;
+    performSearch(q);
+  });
+}
 
-dom.searchInput.addEventListener("input", debounce((e) => {
-  const q = e.target.value.trim();
-  state.query = q;
-  performSearch(q);
-}, 450));
+if (dom.searchInput) {
+  dom.searchInput.addEventListener("input", debounce((e) => {
+    const q = e.target.value.trim();
+    state.query = q;
+    performSearch(q);
+  }, 450));
+}
 
 /* ================= busca principal ================= */
 async function performSearch(query) {
-  dom.loading.hidden = false;
-  dom.booksContainer.innerHTML = "";
-  dom.noResults.hidden = true;
+  if (dom.loading) dom.loading.hidden = false;
+  if (dom.booksContainer) dom.booksContainer.innerHTML = "";
+  if (dom.noResults) dom.noResults.hidden = true;
+
   try {
     let q = query ? `${query}` : "subject:fiction";
     if (state.author) q += `+inauthor:${state.author}`;
@@ -390,16 +430,18 @@ async function performSearch(query) {
     renderBooks(filterAndNormalize(items));
   } catch (err) {
     console.error(err);
-    dom.booksContainer.innerHTML = "";
-    dom.noResults.hidden = false;
-    dom.noResults.textContent = "Erro ao buscar: " + err.message;
+    if (dom.booksContainer) dom.booksContainer.innerHTML = "";
+    if (dom.noResults) {
+      dom.noResults.hidden = false;
+      dom.noResults.textContent = "Erro ao buscar: " + err.message;
+    }
   } finally {
-    dom.loading.hidden = true;
+    if (dom.loading) dom.loading.hidden = true;
   }
 }
 
 /* ================= top category (traduzida) ================= */
-function updateTopCategory(items){
+function updateTopCategory(items) {
   const counts = {};
   (items || []).forEach(it => {
     (it.volumeInfo?.categories || []).forEach(c => {
@@ -410,14 +452,15 @@ function updateTopCategory(items){
   });
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const top = entries.length ? entries[0][0] : "Livros";
-  dom.topCategoryName.textContent = top;
+  if (dom.topCategoryName) dom.topCategoryName.textContent = top;
 }
 
 /* ================= initial load (sugestões) ================= */
-async function initialLoad(){
-  dom.resultsTitle.textContent = "Melhores Avaliados";
-  dom.topCategoryName.textContent = "—";
-  dom.loading.hidden = false;
+async function initialLoad() {
+  if (dom.resultsTitle) dom.resultsTitle.textContent = "Melhores Avaliados";
+  if (dom.topCategoryName) dom.topCategoryName.textContent = "—";
+  if (dom.loading) dom.loading.hidden = false;
+
   try {
     const res = await fetchBooksRaw("subject:fiction", { maxResults: 30, orderBy: "relevance" });
     const items = res.items || [];
@@ -429,25 +472,30 @@ async function initialLoad(){
     renderBooks(filterAndNormalize(sorted.slice(0, 12)));
   } catch (err) {
     console.error(err);
-    dom.noResults.hidden = false;
-    dom.noResults.textContent = "Erro ao carregar sugestões: " + err.message;
+    if (dom.noResults) {
+      dom.noResults.hidden = false;
+      dom.noResults.textContent = "Erro ao carregar sugestões: " + err.message;
+    }
   } finally {
-    dom.loading.hidden = true;
+    if (dom.loading) dom.loading.hidden = true;
   }
 }
 
 /* ================= top category click ================= */
-dom.topCategoryName.addEventListener("click", () => {
-  const cat = dom.topCategoryName.textContent;
-  if (cat && cat !== "—") {
-    dom.searchInput.value = cat;
-    state.query = cat;
-    performSearch(cat);
-  }
-});
+if (dom.topCategoryName) {
+  dom.topCategoryName.addEventListener("click", () => {
+    const cat = dom.topCategoryName.textContent;
+    if (cat && cat !== "—") {
+      if (dom.searchInput) dom.searchInput.value = cat;
+      state.query = cat;
+      performSearch(cat);
+    }
+  });
+}
 
 /* ================= a11y ================= */
 [dom.categorySuggestions, dom.excludeSuggestions].forEach(s => {
+  if (!s) return;
   s.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       const first = s.querySelector("div");
@@ -457,7 +505,7 @@ dom.topCategoryName.addEventListener("click", () => {
 });
 
 /* ================= leitura do ?q= da URL ================= */
-function getQueryFromURL(){
+function getQueryFromURL() {
   const params = new URLSearchParams(window.location.search);
   return params.get("q") || "";
 }
@@ -469,14 +517,15 @@ function getQueryFromURL(){
 
   const q = getQueryFromURL();
   if (q) {
-    dom.searchInput.value = q;
+    if (dom.searchInput) dom.searchInput.value = q;
     state.query = q;
-    dom.resultsTitle.textContent = `Resultados para "${q}"`;
+    if (dom.resultsTitle) dom.resultsTitle.textContent = `Resultados para "${q}"`;
     await performSearch(q);
   } else {
     await initialLoad();
   }
 })();
 
+/* expor pro console (debug) */
 window.performSearch = performSearch;
 window.state = state;
