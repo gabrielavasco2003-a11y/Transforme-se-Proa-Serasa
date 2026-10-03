@@ -62,23 +62,44 @@
     dom.feedback.textContent = msg;
     dom.feedback.className = `feedback ${tipo}`;
     dom.feedback.hidden = false;
+    dom.feedback.classList.remove('hidden');
+    dom.feedback.style.display = 'block';
   }
 
   function hideFeedback() {
     dom.feedback.hidden = true;
+    dom.feedback.classList.add('hidden');
+    dom.feedback.style.display = 'none';
     dom.feedback.textContent = '';
   }
 
+  /* ============================================================
+     MOSTRAR / ESCONDER SEÇÕES
+     ============================================================ */
+  function mostrar(el, display = 'block') {
+    if (!el) return;
+    el.hidden = false;
+    el.classList.remove('hidden');
+    el.style.display = display;
+  }
+
+  function esconder(el) {
+    if (!el) return;
+    el.hidden = true;
+    el.classList.add('hidden');
+    el.style.display = 'none';
+  }
+
   function showLoading(texto = 'Buscando...') {
-    dom.emptyState.hidden = true;
-    dom.resultSec.hidden = true;
-    dom.manualSec.hidden = true;
+    esconder(dom.emptyState);
+    esconder(dom.resultSec);
+    esconder(dom.manualSec);
     showFeedback(texto, 'info');
   }
 
   function hideAll() {
-    dom.resultSec.hidden = true;
-    dom.manualSec.hidden = true;
+    esconder(dom.resultSec);
+    esconder(dom.manualSec);
   }
 
   /* ============================================================
@@ -134,8 +155,9 @@
       </div>
     `;
 
-    dom.resultSec.hidden = false;
-    dom.emptyState.hidden = true;
+    mostrar(dom.resultSec, 'flex');
+    esconder(dom.emptyState);
+    esconder(dom.manualSec);
     hideFeedback();
   }
 
@@ -157,9 +179,10 @@
     dom.manualErrors.innerHTML = '';
     dom.manualErrors.hidden = true;
 
-    dom.manualSec.hidden = false;
-    dom.resultSec.hidden = true;
-    dom.emptyState.hidden = true;
+    // 🔥 AQUI ESTAVA O BUG — agora força:
+    mostrar(dom.manualSec, 'block');
+    esconder(dom.resultSec);
+    esconder(dom.emptyState);
     hideFeedback();
 
     setTimeout(() => dom.manualTitle.focus(), 100);
@@ -227,7 +250,7 @@
 
       showFeedback(`✅ "${livroAtual.title}" foi adicionado à sua estante!`, 'success');
       hideAll();
-      dom.emptyState.hidden = false;
+      mostrar(dom.emptyState, 'block');
       setTimeout(() => { window.location.href = '/shelf.html'; }, 1500);
     } catch (err) {
       console.error(err);
@@ -247,11 +270,14 @@
     if (erros.length) {
       dom.manualErrors.innerHTML = erros.map(e => `<li>${escapeHtml(e)}</li>`).join('');
       dom.manualErrors.hidden = false;
+      dom.manualErrors.classList.remove('hidden');
+      dom.manualErrors.style.display = 'block';
       dom.manualErrors.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
     dom.manualErrors.hidden = true;
+    dom.manualErrors.classList.add('hidden');
     dom.manualSave.disabled = true;
     dom.manualSave.textContent = 'Salvando...';
 
@@ -285,7 +311,7 @@
 
       showFeedback(`✅ "${payload.title}" foi adicionado à sua estante!`, 'success');
       hideAll();
-      dom.emptyState.hidden = false;
+      mostrar(dom.emptyState, 'block');
       setTimeout(() => { window.location.href = '/shelf.html'; }, 1500);
     } catch (err) {
       console.error(err);
@@ -300,7 +326,6 @@
      EVENTOS
      ============================================================ */
   function bindEvents() {
-    // Submit do form de ISBN
     dom.form.addEventListener('submit', async (e) => {
       e.preventDefault();
       hideFeedback();
@@ -336,38 +361,36 @@
       } catch (err) {
         console.error(err);
         showFeedback('❌ Erro ao buscar: ' + err.message, 'error');
-        dom.emptyState.hidden = false;
+        mostrar(dom.emptyState, 'block');
       } finally {
         dom.searchBtn.disabled = false;
         dom.searchBtn.textContent = '🔍 Buscar';
       }
     });
 
-    // Adicionar via API
     dom.addBtn.addEventListener('click', adicionarAEstante);
 
-    // Cancelar (resultado API)
     dom.cancelBtn.addEventListener('click', () => {
       hideAll();
       dom.input.value = '';
       dom.input.focus();
       livroAtual = null;
       hideFeedback();
+      mostrar(dom.emptyState, 'block');
     });
 
-    // Salvar manual
     dom.manualForm.addEventListener('submit', (e) => {
       e.preventDefault();
       adicionarManual();
     });
 
-    // Cancelar manual
     dom.manualCancel.addEventListener('click', () => {
       hideAll();
       dom.input.value = '';
       dom.input.focus();
       isbnBuscado = null;
       hideFeedback();
+      mostrar(dom.emptyState, 'block');
     });
   }
 
