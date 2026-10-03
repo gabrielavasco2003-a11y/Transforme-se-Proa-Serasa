@@ -45,18 +45,49 @@
             aria-expanded="false"
             aria-controls="dropdown"
             aria-label="Abrir menu do usuário"
+            onclick="
+                event.preventDefault();
+                event.stopPropagation();
+                var d = document.getElementById('dropdown');
+                var a = document.getElementById('avatar');
+                if (!d) return;
+                var aberto = !d.classList.contains('hidden');
+                if (aberto) {
+                    d.classList.add('hidden');
+                    d.hidden = true;
+                    d.style.display = 'none';
+                    if (a) a.setAttribute('aria-expanded', 'false');
+                } else {
+                    d.classList.remove('hidden');
+                    d.hidden = false;
+                    d.style.display = 'block';
+                    if (a) a.setAttribute('aria-expanded', 'true');
+                }
+            "
         >
             <span id="avatar-initial" aria-hidden="true">?</span>
         </button>
 
         <ul id="dropdown" class="hidden" role="menu" hidden>
-            <!-- Botão X pra fechar -->
+            <!-- Botão X para fechar -->
             <li role="none" class="dropdown-close-item">
                 <button
                     id="fechar-dropdown"
                     type="button"
                     class="dropdown-close"
                     aria-label="Fechar menu"
+                    onclick="
+                        event.preventDefault();
+                        event.stopPropagation();
+                        var d = document.getElementById('dropdown');
+                        var a = document.getElementById('avatar');
+                        if (d) {
+                            d.classList.add('hidden');
+                            d.hidden = true;
+                            d.style.display = 'none';
+                        }
+                        if (a) a.setAttribute('aria-expanded', 'false');
+                    "
                 >✕</button>
             </li>
 

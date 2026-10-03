@@ -9,6 +9,7 @@
 </head>
 <body>
 <header role="banner">
+<header role="banner">
     <!-- Logo -->
     <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
         <img src="/img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
@@ -44,18 +45,138 @@
             aria-expanded="false"
             aria-controls="dropdown"
             aria-label="Abrir menu do usuário"
+            onclick="
+                event.preventDefault();
+                event.stopPropagation();
+                var d = document.getElementById('dropdown');
+                var a = document.getElementById('avatar');
+                if (!d) return;
+                var aberto = !d.classList.contains('hidden');
+                if (aberto) {
+                    d.classList.add('hidden');
+                    d.hidden = true;
+                    d.style.display = 'none';
+                    if (a) a.setAttribute('aria-expanded', 'false');
+                } else {
+                    d.classList.remove('hidden');
+                    d.hidden = false;
+                    d.style.display = 'block';
+                    if (a) a.setAttribute('aria-expanded', 'true');
+                }
+            "
         >
             <span id="avatar-initial" aria-hidden="true">?</span>
         </button>
 
         <ul id="dropdown" class="hidden" role="menu" hidden>
-            <!-- Botão X pra fechar -->
+            <!-- Botão X para fechar -->
             <li role="none" class="dropdown-close-item">
                 <button
                     id="fechar-dropdown"
                     type="button"
                     class="dropdown-close"
                     aria-label="Fechar menu"
+                    onclick="
+                        event.preventDefault();
+                        event.stopPropagation();
+                        var d = document.getElementById('dropdown');
+                        var a = document.getElementById('avatar');
+                        if (d) {
+                            d.classList.add('hidden');
+                            d.hidden = true;
+                            d.style.display = 'none';
+                        }
+                        if (a) a.setAttribute('aria-expanded', 'false');
+                    "
+                >✕</button>
+            </li>
+
+            <li role="none"><a href="/shelf.html" role="menuitem">Minha Estante</a></li>
+            <li role="none"><a href="/perfil.html" role="menuitem">Meu Perfil</a></li>
+            <li role="none"><a href="/editar-perfil.html" role="menuitem">Editar Perfil</a></li>
+            <li role="none"><a href="/conquistas.html" role="menuitem">Minhas Conquistas</a></li>
+            <li role="none"><a href="#" id="logout" role="menuitem">Logout</a></li>
+        </ul>
+    </nav>
+</header><header role="banner">
+    <!-- Logo -->
+    <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
+        <img src="/img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
+    </a>
+
+    <!-- Busca centralizada -->
+    <form id="search-form" action="/busca.html" method="get" role="search">
+        <label for="search-input" class="sr-only">Buscar livros</label>
+        <input
+            type="search"
+            name="q"
+            id="search-input"
+            placeholder="Insira palavras-chave"
+            aria-label="Buscar livros"
+        >
+        <button type="submit" id="search-btn">Pesquisar</button>
+    </form>
+
+    <!-- Navegação para visitantes (não logados) -->
+    <nav id="nav-visitante" aria-label="Navegação de visitante">
+        <ul>
+            <li><a href="/cadastro.html">Cadastro</a></li>
+            <li><a href="/login.html">Login</a></li>
+        </ul>
+    </nav>
+
+    <!-- Menu do usuário logado (escondido por padrão; JS mostra se logado) -->
+    <nav id="user-menu" class="hidden" hidden aria-label="Menu do usuário">
+        <button
+            id="avatar"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="dropdown"
+            aria-label="Abrir menu do usuário"
+            onclick="
+                event.preventDefault();
+                event.stopPropagation();
+                var d = document.getElementById('dropdown');
+                var a = document.getElementById('avatar');
+                if (!d) return;
+                var aberto = !d.classList.contains('hidden');
+                if (aberto) {
+                    d.classList.add('hidden');
+                    d.hidden = true;
+                    d.style.display = 'none';
+                    if (a) a.setAttribute('aria-expanded', 'false');
+                } else {
+                    d.classList.remove('hidden');
+                    d.hidden = false;
+                    d.style.display = 'block';
+                    if (a) a.setAttribute('aria-expanded', 'true');
+                }
+            "
+        >
+            <span id="avatar-initial" aria-hidden="true">?</span>
+        </button>
+
+        <ul id="dropdown" class="hidden" role="menu" hidden>
+            <!-- Botão X para fechar -->
+            <li role="none" class="dropdown-close-item">
+                <button
+                    id="fechar-dropdown"
+                    type="button"
+                    class="dropdown-close"
+                    aria-label="Fechar menu"
+                    onclick="
+                        event.preventDefault();
+                        event.stopPropagation();
+                        var d = document.getElementById('dropdown');
+                        var a = document.getElementById('avatar');
+                        if (d) {
+                            d.classList.add('hidden');
+                            d.hidden = true;
+                            d.style.display = 'none';
+                        }
+                        if (a) a.setAttribute('aria-expanded', 'false');
+                    "
                 >✕</button>
             </li>
 
@@ -67,7 +188,6 @@
         </ul>
     </nav>
 </header>
-
     <main>
         <section id="editar-perfil">
             <h2>EDIÇÃO PERFIL</h2>
