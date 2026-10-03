@@ -2,8 +2,118 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalhe do Livro - Spoiler Esperado</title>
   <link rel="stylesheet" href="../css/book.css">
+
+  <!-- Estilos mínimos apenas para o seletor de status, a nota do usuário
+       e os comentários. Não sobrescrevem as classes existentes do book.css. -->
+  <style>
+    .status-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0;
+    }
+    .status-picker .status-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border: 1px solid #c9a86a;
+      background: #fff8e7;
+      color: #5a4a2a;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .status-picker .status-btn:hover:not(:disabled) {
+      background: #f5ecd2;
+    }
+    .status-picker .status-btn.active {
+      background: #c9a86a;
+      color: #fff;
+      border-color: #a8894f;
+    }
+    .status-picker .status-btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+    .status-picker .status-btn:focus-visible {
+      outline: 2px solid #a8894f;
+      outline-offset: 2px;
+    }
+
+    .rating-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0 4px;
+      flex-wrap: wrap;
+    }
+    .rating-box input[type="range"] {
+      flex: 1;
+      min-width: 120px;
+    }
+    .rating-box output {
+      min-width: 2ch;
+      font-weight: 700;
+      text-align: center;
+    }
+    .rating-box #clear-rating {
+      border: 1px solid #c9a86a;
+      background: #fff8e7;
+      color: #5a4a2a;
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+    .rating-box #clear-rating:hover {
+      background: #f5ecd2;
+    }
+
+    .community-rating {
+      font-size: 0.95rem;
+      color: #6b6b6b;
+      margin-top: 6px;
+    }
+
+    .comments-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .comments-list li {
+      list-style: none;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border: 1px solid #e6d9b8;
+      border-radius: 10px;
+      background: #fffdf6;
+    }
+    .comment-meta {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .comment-actions {
+      margin-top: 6px;
+    }
+    .comment-actions button {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border: 1px solid #c9a86a;
+      background: #fff8e7;
+      color: #5a4a2a;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .comment-actions button:hover {
+      background: #f5ecd2;
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -21,11 +131,34 @@
     <div class="book-header">
       <img id="book-thumbnail" alt="Capa do livro">
       <div class="book-meta">
-        <h1 id="book-title">Título</h1>
+        <h1 id="book-title">Carregando...</h1>
         <p><strong>Autor:</strong> <span id="book-authors"></span></p>
         <p><strong>Ano:</strong> <span id="book-year"></span></p>
         <p><strong>Gênero:</strong> <span id="book-categories"></span></p>
-        <button id="add-to-shelf">Adicionar à estante</button>
+
+        <!-- Média da comunidade (calculada pelo backend) -->
+        <p class="community-rating">
+          <strong>Nota da comunidade:</strong>
+          <span id="community-rating" aria-live="polite">—</span>
+        </p>
+
+        <!-- Seletor de status — OBRIGATÓRIO ao adicionar o livro -->
+        <div class="status-picker" id="status-picker" role="group" aria-label="Status de leitura">
+          <button class="status-btn" data-status="quero"    type="button">＋ Quero Ver</button>
+          <button class="status-btn" data-status="lendo"    type="button">▶ Lendo</button>
+          <button class="status-btn" data-status="terminei" type="button">✓ Terminei</button>
+          <button class="status-btn" data-status="pausei"   type="button">❚❚ Pausei</button>
+          <button class="status-btn" data-status="desisti"  type="button">✕ Desisti</button>
+        </div>
+
+        <!-- Nota do usuário (0–10) — só aparece quando logado -->
+        <div class="rating-box" id="rating-box" hidden>
+          <label for="user-rating"><strong>Sua nota:</strong></label>
+          <input type="range" id="user-rating" min="0" max="10" step="1" value="0"
+                 aria-label="Sua nota de 0 a 10">
+          <output id="user-rating-value" for="user-rating">0</output>
+          <button id="clear-rating" type="button" title="Remover nota">✕</button>
+        </div>
       </div>
     </div>
 
@@ -37,10 +170,10 @@
     <div class="comments-section">
       <h2>Comentários</h2>
       <div id="comment-box" hidden>
-        <textarea id="comment-text" placeholder="O que achou?"></textarea>
-        <button id="submit-comment">Comentar</button>
+        <textarea id="comment-text" placeholder="O que achou?" maxlength="2000"></textarea>
+        <button id="submit-comment" type="button">Comentar</button>
       </div>
-      <ul id="comments-list"></ul>
+      <ul id="comments-list" class="comments-list" aria-live="polite"></ul>
     </div>
   </main>
 

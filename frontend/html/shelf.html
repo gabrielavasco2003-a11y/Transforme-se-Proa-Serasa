@@ -11,15 +11,16 @@
     <div id="logo">
       <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Spoiler Esperado">
     </div>
-    
+
     <div id="search">
       <input type="text" id="search-input" placeholder="Procure por título, autor...">
-      <button id="search-btn">🔍</button>
+      <button id="search-btn" type="button" aria-label="Buscar">🔍</button>
     </div>
 
     <nav>
       <ul>
         <li><a href="index.html">Início</a></li>
+        <li><a href="busca.html">Buscar livros</a></li>
         <li><a href="perfil.html">Perfil</a></li>
       </ul>
     </nav>
@@ -29,63 +30,58 @@
       <div id="dropdown" class="hidden">
         <ul>
           <li><a href="perfil.html">Meu Perfil</a></li>
-          <li><a href="#">Sair</a></li>
+          <li><a href="/api/logout">Sair</a></li>
         </ul>
       </div>
     </div>
   </header>
 
   <main>
-    <!-- Barra Lateral de Filtros -->
     <aside id="filters" class="filters" aria-label="Filtros da estante">
       <h2>Filtro</h2>
 
       <section class="filter-block">
-        <!-- REMOVIDO: <label class="filter-label">Incluir</label> -->
-        
         <div class="filter-group">
-          <label class="filter-label">Avaliação</label>
-          <div id="rating-filter" class="stars">
-            <button class="star-btn" data-value="1">★</button>
-            <button class="star-btn" data-value="2">★</button>
-            <button class="star-btn" data-value="3">★</button>
-            <button class="star-btn" data-value="4">★</button>
-            <button class="star-btn" data-value="5">★</button>
+          <label class="filter-label" for="rating-filter">Avaliação</label>
+          <div id="rating-filter" class="stars" role="group" aria-label="Filtrar por avaliação">
+            <button class="star-btn" data-value="1" type="button" aria-pressed="false">★</button>
+            <button class="star-btn" data-value="2" type="button" aria-pressed="false">★</button>
+            <button class="star-btn" data-value="3" type="button" aria-pressed="false">★</button>
+            <button class="star-btn" data-value="4" type="button" aria-pressed="false">★</button>
+            <button class="star-btn" data-value="5" type="button" aria-pressed="false">★</button>
           </div>
           <span class="rating-text">ou mais</span>
         </div>
 
         <div class="filter-group">
-          <label class="filter-label">Status de leitura</label>
+          <label class="filter-label" for="status-filter">Status de leitura</label>
           <select id="status-filter" class="filter-select">
             <option value="">Todos</option>
-            <option>Quero</option>
-            <option>Em Andamento</option>
-            <option>Concluído</option>
+            <option value="quero">Quero Ver</option>
+            <option value="lendo">Lendo</option>
+            <option value="terminei">Terminei</option>
+            <option value="pausei">Pausei</option>
+            <option value="desisti">Desisti</option>
           </select>
         </div>
 
-        <!-- Gênero agora é input com datalist para busca -->
         <div class="filter-group">
-          <label class="filter-label">Gênero</label>
+          <label class="filter-label" for="genre-filter">Gênero</label>
           <input id="genre-filter" list="genre-list" type="text" placeholder="Digite o gênero..." class="filter-input" />
-          <datalist id="genre-list">
-            <!-- O JS preenche com as categorias do categories.json -->
-          </datalist>
+          <datalist id="genre-list"></datalist>
         </div>
 
         <div class="filter-group">
-          <label class="filter-label">Autor</label>
+          <label class="filter-label" for="author-filter">Autor</label>
           <input id="author-filter" type="text" placeholder="Digite o autor..." class="filter-input" />
         </div>
 
         <div class="filter-group">
-          <label class="filter-label">Ano</label>
+          <label class="filter-label" for="year-filter">Ano</label>
           <input id="year-filter" type="number" placeholder="Digite o ano..." min="0" class="filter-input" />
         </div>
       </section>
 
-      <!-- SEÇÃO EXCLUIR AGORA É UM BOTÃO DE UNDO -->
       <section class="filter-block excluded-block">
         <button id="undo-filter" type="button" class="exclude-btn">Excluir último filtro</button>
       </section>
@@ -96,15 +92,14 @@
       </div>
     </aside>
 
-    <!-- Área Principal da Estante -->
     <section class="shelf">
       <div class="shelf-header">
         <h1>Minha Estante</h1>
       </div>
-      
+
       <div id="loading" class="loading-message" hidden>Carregando...</div>
       <div id="no-results" class="no-results-message" hidden>Nenhum resultado encontrado.</div>
-      
+
       <div id="shelf-container" class="books-grid"></div>
     </section>
   </main>

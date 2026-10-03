@@ -29,13 +29,12 @@ const FRONTEND_PATH = possibleFrontendPaths.find(p => fs.existsSync(p)) || possi
 const HTML_PATH = path.join(FRONTEND_PATH, 'html');
 const DATA_PATH = path.join(FRONTEND_PATH, 'data');
 
-// Descobre a pasta IMG real (tenta vários caminhos)
 const possibleImgPaths = [
-  path.resolve(FRONTEND_PATH, '..', 'img'),        // Projeto/img (padrão)
-  path.resolve(ROOT_DIR, 'img'),                   // se rodar da raiz
-  path.resolve(ROOT_DIR, '..', 'img'),             // se rodar de backend
-  path.resolve(__dirname, '..', 'img'),            // ../img
-  path.resolve(FRONTEND_PATH, 'img')               // Projeto/frontend/img
+  path.resolve(FRONTEND_PATH, '..', 'img'),
+  path.resolve(ROOT_DIR, 'img'),
+  path.resolve(ROOT_DIR, '..', 'img'),
+  path.resolve(__dirname, '..', 'img'),
+  path.resolve(FRONTEND_PATH, 'img')
 ];
 const IMG_PATH = possibleImgPaths.find(p => fs.existsSync(p)) || possibleImgPaths[0];
 
@@ -57,15 +56,12 @@ app.use((req, res, next) => {
 });
 
 // ---------- ESTÁTICOS ----------
-// Sempre monta as rotas — mesmo que a pasta não exista, o Express não quebra
 app.use(express.static(FRONTEND_PATH));
 if (fs.existsSync(HTML_PATH)) app.use(express.static(HTML_PATH));
 
-// /img — sempre monta, aponta pra pasta que existir
 app.use('/img', express.static(IMG_PATH));
 console.log('Servindo /img de:', IMG_PATH);
 
-// /data — sempre monta
 if (fs.existsSync(DATA_PATH)) {
   app.use('/data', express.static(DATA_PATH));
   console.log('Servindo /data de:', DATA_PATH);
@@ -227,6 +223,17 @@ const CommentSchema = new mongoose.Schema({
   editedAt: Date
 });
 const Comment = mongoose.model('Comment', CommentSchema);
+
+// ---------- MODELO: RATING (nota do usuário por livro) ----------
+const RatingSchema = new mongoose.Schema({
+  userId:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  bookVolumeId: { type: String, required: true, index: true },
+  value:        { type: Number, required: true, min: 0, max: 10 },
+  updatedAt:    { type: Date, default: Date.now }
+}, { timestamps: true });
+
+RatingSchema.index({ userId: 1, bookVolumeId: 1 }, { unique: true });
+const Rating = mongoose.model('Rating', RatingSchema);
 
 // ---------- MODELO: RECOVERY CODE ----------
 const RecoveryCodeSchema = new mongoose.Schema({
@@ -626,7 +633,7 @@ app.get('/api/reactions', (req, res) => {
 });
 
 // ================================================================
-// ============ NOVAS ROTAS: GOOGLE BOOKS (proxy seguro) ==========
+// ============ GOOGLE BOOKS (proxy seguro) =======================
 // ================================================================
 app.get('/api/books/em-alta', async (req, res) => {
   try {
@@ -695,7 +702,7 @@ app.get('/api/books/novos', async (req, res) => {
 });
 
 // ================================================================
-// ============ ROTA NOVA: BUSCA LIVRE (proxy /api/books/search) ==
+// ============ BUSCA LIVRE (proxy /api/books/search) =============
 // ================================================================
 app.get('/api/books/search', async (req, res) => {
   try {
@@ -713,7 +720,6 @@ app.get('/api/books/search', async (req, res) => {
 
     const resp = await fetch(url);
 
-    // Repassa status real (400/429/etc) e corpo pra o front conseguir ver o motivo
     const text = await resp.text();
     res.status(resp.status).type('application/json').send(text);
   } catch (err) {
@@ -745,6 +751,68 @@ app.get('/api/book/:volumeId', async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ mensagem: 'Erro ao buscar livro.' });
+  }
+});
+
+// ================================================================
+// ============ ROTAS: RATING (nota por livro) ====================
+// ================================================================
+app.get('/api/book/:volumeId/rating', async (req, res) => {
+  try {
+    const { volumeId } = req.params;
+
+    const agg = await Rating.aggregate([
+      { $match: { bookVolumeId: volumeId } },
+      { $group: { _id: null, media: { $avg: '$value' }, total: { $sum: 1 } } }
+    ]);
+    const media = agg[0]?.media ? Number(agg[0].media.toFixed(1)) : null;
+    const total = agg[0]?.total || 0;
+
+    let minhaNota = null;
+    if (req.user) {
+      const r = await Rating.findOne({ userId: req.user._id, bookVolumeId: volumeId });
+      minhaNota = r ? r.value : null;
+    }
+    return res.json({ media, total, minhaNota });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ mensagem: 'Erro ao buscar avaliações.' });
+  }
+});
+
+app.post('/api/book/:volumeId/rating', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
+    const { volumeId } = req.params;
+    const { value } = req.body;
+
+    if (value === null || value === undefined || value === '') {
+      await Rating.deleteOne({ userId: req.user._id, bookVolumeId: volumeId });
+      return res.json({ mensagem: 'Nota removida.', media: null, total: 0, minhaNota: null });
+    }
+
+    const n = Math.round(Number(value));
+    if (isNaN(n) || n < 0 || n > 10) {
+      return res.status(400).json({ mensagem: 'Nota deve ser inteiro entre 0 e 10.' });
+    }
+
+    await Rating.findOneAndUpdate(
+      { userId: req.user._id, bookVolumeId: volumeId },
+      { value: n, updatedAt: new Date() },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const agg = await Rating.aggregate([
+      { $match: { bookVolumeId: volumeId } },
+      { $group: { _id: null, media: { $avg: '$value' }, total: { $sum: 1 } } }
+    ]);
+    const media = agg[0]?.media ? Number(agg[0].media.toFixed(1)) : null;
+    const total = agg[0]?.total || 0;
+
+    return res.json({ mensagem: 'Nota salva.', media, total, minhaNota: n });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ mensagem: 'Erro ao salvar avaliação.' });
   }
 });
 
@@ -843,12 +911,18 @@ app.get('/api/shelf/item/:volumeId', async (req, res) => {
   }
 });
 
+// POST /api/shelf/add — aceita status e faz upsert (cria OU atualiza)
 app.post('/api/shelf/add', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
-    const { volumeId } = req.body;
+
+    const { volumeId, status } = req.body;
     if (!volumeId) return res.status(400).json({ mensagem: 'volumeId obrigatório.' });
 
+    const STATUS_VALIDOS = ['quero', 'lendo', 'terminei', 'pausei', 'desisti'];
+    const statusFinal = status && STATUS_VALIDOS.includes(status) ? status : 'quero';
+
+    // Snapshot do livro (cache local)
     let snapshot = await BookSnapshot.findOne({ volumeId });
     if (!snapshot) {
       try {
@@ -867,11 +941,17 @@ app.post('/api/shelf/add', async (req, res) => {
         snapshot = await BookSnapshot.create(snapData).catch(async () =>
           await BookSnapshot.findOne({ volumeId })
         );
-      } catch (e) { /* segue */ }
+      } catch (e) { /* segue sem snapshot */ }
     }
 
     const exists = await ShelfItem.findOne({ userId: req.user._id, volumeId });
-    if (exists) return res.status(400).json({ mensagem: 'Livro já está na estante.' });
+    if (exists) {
+      // Já está na estante → atualiza status
+      exists.status = statusFinal;
+      exists.updatedAt = new Date();
+      await exists.save();
+      return res.json({ mensagem: 'Status atualizado na estante.', item: exists });
+    }
 
     const isbnObj = (snapshot?.industryIdentifiers || []).find(i => /ISBN/.test(i.type || '')) || null;
     const isbn = isbnObj ? (isbnObj.identifier || '') : '';
@@ -886,7 +966,7 @@ app.post('/api/shelf/add', async (req, res) => {
       categories: snapshot?.categories || [],
       description: snapshot?.description || '',
       isbn,
-      status: 'quero'
+      status: statusFinal
     });
 
     return res.json({ mensagem: 'Livro adicionado à estante.', item });
@@ -947,6 +1027,34 @@ app.post('/api/shelf/remove', async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ mensagem: 'Erro ao remover livro da estante.' });
+  }
+});
+
+// ================================================================
+// ============ ROTA: BUSCA SIMPLES NA ESTANTE DO USUÁRIO =========
+// ================================================================
+app.get('/api/search', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
+    const q = String(req.query.q || '').trim();
+    if (!q) {
+      const itens = await ShelfItem.find({ userId: req.user._id }).sort({ addedAt: -1 }).lean();
+      return res.json({ livros: itens });
+    }
+    const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const itens = await ShelfItem.find({
+      userId: req.user._id,
+      $or: [
+        { title: regex },
+        { authors: regex },
+        { description: regex },
+        { categories: regex }
+      ]
+    }).sort({ addedAt: -1 }).lean();
+    return res.json({ livros: itens });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ mensagem: 'Erro na busca.' });
   }
 });
 
