@@ -4,6 +4,7 @@
 // - Alterna entre #nav-visitante e #user-menu
 // - Cards de livro abrem book.html?volumeId=...
 // - Setas de rolagem nas seções (só no index.html)
+// - Botão X para fechar o dropdown + clique fora + ESC
 // ================================================================
 
 const IMG_FALLBACK = '/img/sem-capa.jpg';
@@ -164,6 +165,17 @@ async function carregarNovos() {
   }
 }
 
+/* ================= FUNÇÃO AUXILIAR: FECHAR DROPDOWN ================= */
+function fecharDropdown() {
+  const dropdown = document.getElementById('dropdown');
+  const avatar   = document.getElementById('avatar');
+  if (dropdown) {
+    dropdown.classList.add('hidden');
+    dropdown.hidden = true;
+  }
+  if (avatar) avatar.setAttribute('aria-expanded', 'false');
+}
+
 /* ================= SESSÃO / LOGIN PERSISTENTE ================= */
 async function checarSessao() {
   const navVisitante = document.getElementById('nav-visitante');
@@ -212,6 +224,17 @@ async function checarSessao() {
       });
     }
 
+    // Botão X para fechar o dropdown
+    const fecharBtn = document.getElementById('fechar-dropdown');
+    if (fecharBtn && !fecharBtn.dataset.bound) {
+      fecharBtn.dataset.bound = 'true';
+      fecharBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fecharDropdown();
+      });
+    }
+
     // Logout (evita duplicação com dataset)
     if (logoutBtn && !logoutBtn.dataset.bound) {
       logoutBtn.dataset.bound = 'true';
@@ -235,27 +258,20 @@ async function checarSessao() {
       userMenu.classList.add('hidden');
       userMenu.style.display = 'none';
     }
-    if (dropdown) {
-      dropdown.classList.add('hidden');
-      dropdown.hidden = true;
-    }
+    fecharDropdown();
   }
 }
 
 /* ================= FECHAR DROPDOWN AO CLICAR FORA ================= */
-/* Roda sempre, em qualquer página, com ou sem login. */
 safeRun('fechar dropdown (click fora)', () => {
   document.addEventListener('click', (e) => {
     const userMenu = document.getElementById('user-menu');
     const dropdown = document.getElementById('dropdown');
-    const avatar   = document.getElementById('avatar');
 
     if (!userMenu || !dropdown) return;
     if (userMenu.contains(e.target)) return;
 
-    dropdown.classList.add('hidden');
-    dropdown.hidden = true;
-    if (avatar) avatar.setAttribute('aria-expanded', 'false');
+    fecharDropdown();
   });
 });
 
@@ -263,18 +279,11 @@ safeRun('fechar dropdown (click fora)', () => {
 safeRun('fechar dropdown (ESC)', () => {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    const dropdown = document.getElementById('dropdown');
-    const avatar   = document.getElementById('avatar');
-    if (dropdown) {
-      dropdown.classList.add('hidden');
-      dropdown.hidden = true;
-    }
-    if (avatar) avatar.setAttribute('aria-expanded', 'false');
+    fecharDropdown();
   });
 });
 
 /* ================= INICIALIZAÇÃO BLINDADA ================= */
-/* Cada bloco roda isoladamente. Se um falhar, os outros continuam. */
 function init() {
   safeRun('carregarEmAlta', () => carregarEmAlta());
   safeRun('carregarJabuti', () => carregarJabuti());

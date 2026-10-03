@@ -279,3 +279,38 @@ footer a {
     color: #FCF4E9;
     text-decoration: none;
 }
+/* ============================================
+   Botão X para fechar o dropdown do usuário
+   ============================================ */
+
+.dropdown-close-item {
+    display: flex !important;
+    justify-content: flex-end !important;
+    padding: 0 8px 4px 8px !important;
+    margin: 0 !important;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 4px !important;
+}
+
+.dropdown-close {
+    background: transparent;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dropdown-close:hover {
+    background-color: #f0f0f0;
+    color: #162745;
+}
+
+.dropdown-close:focus {
+    outline: 2px solid #B89764;
+    outline-offset: 1px;
+}

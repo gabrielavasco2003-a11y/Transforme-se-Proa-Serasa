@@ -118,10 +118,12 @@
 </head>
 <body>
 <header role="banner">
+    <!-- Logo -->
     <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
         <img src="/img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
     </a>
 
+    <!-- Busca centralizada -->
     <form id="search-form" action="/busca.html" method="get" role="search">
         <label for="search-input" class="sr-only">Buscar livros</label>
         <input
@@ -134,6 +136,7 @@
         <button type="submit" id="search-btn">Pesquisar</button>
     </form>
 
+    <!-- Navegação para visitantes (não logados) -->
     <nav id="nav-visitante" aria-label="Navegação de visitante">
         <ul>
             <li><a href="/cadastro.html">Cadastro</a></li>
@@ -141,6 +144,7 @@
         </ul>
     </nav>
 
+    <!-- Menu do usuário logado (escondido por padrão; JS mostra se logado) -->
     <nav id="user-menu" class="hidden" hidden aria-label="Menu do usuário">
         <button
             id="avatar"
@@ -154,6 +158,16 @@
         </button>
 
         <ul id="dropdown" class="hidden" role="menu" hidden>
+            <!-- Botão X pra fechar -->
+            <li role="none" class="dropdown-close-item">
+                <button
+                    id="fechar-dropdown"
+                    type="button"
+                    class="dropdown-close"
+                    aria-label="Fechar menu"
+                >✕</button>
+            </li>
+
             <li role="none"><a href="/shelf.html" role="menuitem">Minha Estante</a></li>
             <li role="none"><a href="/perfil.html" role="menuitem">Meu Perfil</a></li>
             <li role="none"><a href="/editar-perfil.html" role="menuitem">Editar Perfil</a></li>
