@@ -1,5 +1,10 @@
 // ================================================================
 // script.js — compartilhado por todas as páginas
+// - Mantém o usuário logado (pergunta ao backend /api/me)
+// - Alterna entre #nav-visitante e #user-menu
+// - Cards de livro abrem book.html?volumeId=...
+// - Setas de rolagem nas seções (só no index.html)
+// - NÃO controla o dropdown: isso é feito pelo onclick inline no HTML
 // ================================================================
 
 const IMG_FALLBACK = '/img/sem-capa.jpg';
@@ -159,99 +164,9 @@ async function carregarNovos() {
   }
 }
 
-/* ================= FUNÇÃO AUXILIAR: FECHAR / TOGGLE DROPDOWN ================= */
-function fecharDropdown() {
-  const dropdown = document.getElementById('dropdown');
-  const avatar   = document.getElementById('avatar');
-  if (dropdown) {
-    dropdown.classList.add('hidden');
-    dropdown.hidden = true;
-    dropdown.style.display = 'none';
-  }
-  if (avatar) avatar.setAttribute('aria-expanded', 'false');
-}
-
-function toggleDropdown() {
-  const dropdown = document.getElementById('dropdown');
-  const avatar   = document.getElementById('avatar');
-  if (!dropdown) return;
-  const estaAberto = !dropdown.classList.contains('hidden');
-  if (estaAberto) {
-    fecharDropdown();
-  } else {
-    dropdown.classList.remove('hidden');
-    dropdown.hidden = false;
-    dropdown.style.display = 'block';
-    if (avatar) avatar.setAttribute('aria-expanded', 'true');
-  }
-}
-
-/* ================= BIND DOS LISTENERS DO HEADER ================= */
-/* Roda sempre (logado ou não). Se já anexou, não duplica. */
-function bindHeaderListeners() {
-  const avatar    = document.getElementById('avatar');
-  const dropdown  = document.getElementById('dropdown');
-  const fecharBtn = document.getElementById('fechar-dropdown');
-  const logoutBtn = document.getElementById('logout');
-  const userMenu  = document.getElementById('user-menu');
-
-  if (!avatar || !dropdown) return;
-
-  // ---- Avatar: alterna dropdown ----
-  if (!avatar.dataset.bound) {
-    avatar.dataset.bound = 'true';
-    avatar.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleDropdown();
-    });
-  }
-
-  // ---- Botão X: fecha dropdown ----
-  if (fecharBtn && !fecharBtn.dataset.bound) {
-    fecharBtn.dataset.bound = 'true';
-    fecharBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      fecharDropdown();
-    });
-  }
-
-  // ---- Logout ----
-  if (logoutBtn && !logoutBtn.dataset.bound) {
-    logoutBtn.dataset.bound = 'true';
-    logoutBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      try {
-        await fetch('/api/logout', { credentials: 'same-origin' });
-      } catch (_) { /* ignora */ }
-      window.location.href = '/index.html';
-    });
-  }
-
-  // ---- Clique fora do menu fecha ----
-  if (!window.__headerOutsideBound) {
-    window.__headerOutsideBound = true;
-    document.addEventListener('click', (e) => {
-      const um = document.getElementById('user-menu');
-      const dd = document.getElementById('dropdown');
-      if (!um || !dd) return;
-      if (um.contains(e.target)) return;
-      fecharDropdown();
-    });
-  }
-
-  // ---- ESC fecha ----
-  if (!window.__headerEscBound) {
-    window.__headerEscBound = true;
-    document.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape') return;
-      fecharDropdown();
-    });
-  }
-}
-
 /* ================= SESSÃO / LOGIN PERSISTENTE ================= */
+/* Só mostra/esconde nav-visitante vs user-menu e coloca a inicial.
+   NÃO controla abrir/fechar do dropdown — isso é do onclick inline no HTML. */
 async function checarSessao() {
   const navVisitante = document.getElementById('nav-visitante');
   const userMenu     = document.getElementById('user-menu');
@@ -263,9 +178,10 @@ async function checarSessao() {
   try {
     const res = await fetch('/api/me', { credentials: 'same-origin' });
     if (res.ok) user = await res.json();
-  } catch (_) { /* sem backend → trata como visitante */ }
+  } catch (_) { /* sem backend → visitante */ }
 
   if (user) {
+    // LOGADO
     if (navVisitante) {
       navVisitante.hidden = true;
       navVisitante.classList.add('hidden');
@@ -281,6 +197,7 @@ async function checarSessao() {
       avatarInit.textContent = String(nome).trim().charAt(0).toUpperCase() || '?';
     }
   } else {
+    // VISITANTE
     if (navVisitante) {
       navVisitante.hidden = false;
       navVisitante.classList.remove('hidden');
@@ -291,21 +208,69 @@ async function checarSessao() {
       userMenu.classList.add('hidden');
       userMenu.style.display = 'none';
     }
-    fecharDropdown();
   }
 }
 
-/* ================= INICIALIZAÇÃO BLINDADA ================= */
+/* ================= LOGOUT ================= */
+async function bindLogout() {
+  const logoutBtn = document.getElementById('logout');
+  if (!logoutBtn || logoutBtn.dataset.bound) return;
+  logoutBtn.dataset.bound = 'true';
+  logoutBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      await fetch('/api/logout', { credentials: 'same-origin' });
+    } catch (_) { /* ignora */ }
+    window.location.href = '/index.html';
+  });
+}
+
+/* ================= FECHAR DROPDOWN AO CLICAR FORA (delegado) ================= */
+/* Este é o único listener global — e NÃO interfere no X nem no avatar, */
+/* porque verifica `closest('#fechar-dropdown')` antes de fazer qualquer coisa. */
+safeRun('fechar dropdown (click fora)', () => {
+  document.addEventListener('click', (e) => {
+    const um = document.getElementById('user-menu');
+    const dd = document.getElementById('dropdown');
+    if (!um || !dd) return;
+
+    // Se o clique foi no X, ignora (o onclick inline já fecha)
+    if (e.target.closest('#fechar-dropdown')) return;
+
+    // Se o clique foi dentro do user-menu (avatar, links), ignora
+    if (um.contains(e.target)) return;
+
+    // Clique fora → fecha
+    dd.classList.add('hidden');
+    dd.hidden = true;
+    dd.style.display = 'none';
+    const a = document.getElementById('avatar');
+    if (a) a.setAttribute('aria-expanded', 'false');
+  });
+});
+
+/* ================= ESC FECHA ================= */
+safeRun('fechar dropdown (ESC)', () => {
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const dd = document.getElementById('dropdown');
+    if (dd) {
+      dd.classList.add('hidden');
+      dd.hidden = true;
+      dd.style.display = 'none';
+    }
+    const a = document.getElementById('avatar');
+    if (a) a.setAttribute('aria-expanded', 'false');
+  });
+});
+
+/* ================= INICIALIZAÇÃO ================= */
 function init() {
   safeRun('carregarEmAlta', () => carregarEmAlta());
   safeRun('carregarJabuti', () => carregarJabuti());
   safeRun('carregarNovos',  () => carregarNovos());
-
-  // 👇 Anexa listeners do header SEMPRE (logado ou não)
-  safeRun('bindHeaderListeners', () => bindHeaderListeners());
-
-  // Depois verifica sessão (pode rodar em paralelo)
-  safeRun('checarSessao', () => checarSessao());
+  safeRun('checarSessao',   () => checarSessao());
+  safeRun('bindLogout',     () => bindLogout());
 }
 
 if (document.readyState === 'loading') {
