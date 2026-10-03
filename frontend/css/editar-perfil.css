@@ -1,56 +1,16 @@
-body {
-    font-family: Verdana, sans-serif;
-    background-color: #FCF4E9;
-    color: #162745;
-    margin: 0;
-    padding: 0;
-}
+/* ============================================
+   Editar Perfil — estilos específicos da página
+   (header, footer, dropdown e #avatar do header
+    são controlados pelo /css/style.css)
+   ============================================ */
 
-/* Header */
-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: #C09E68;
-    padding: 10px 20px;
-}
-
-#logo img {
-    width: 150px;
-}
-
-/* Centralizar busca */
-#search {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-}
-#search input {
-    padding: 8px;
-    width: 280px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-#search button {
-    padding: 8px 12px;
-    background-color: #B89764;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    border-radius: 5px;
-}
-
-/* Edição de perfil */
-main {
-    padding: 20px;
-}
-
+/* Container do formulário */
 #editar-perfil {
     background: #fff;
     padding: 30px;
     border-radius: 10px;
     margin: 40px auto;
-    max-width: 900px; /* mais largo para comportar avatar + inputs */
+    max-width: 900px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
@@ -61,14 +21,14 @@ main {
     font-size: 1.4em;
 }
 
-/* Layout principal: avatar + formulário lado a lado */
+/* Layout: avatar + formulário lado a lado */
 .editar-container {
     display: flex;
     align-items: flex-start;
     gap: 50px;
 }
 
-/* Avatar */
+/* Seção do avatar (foto de perfil GRANDE — é diferente do avatar do header) */
 .avatar-section {
     display: flex;
     flex-direction: column;
@@ -76,11 +36,18 @@ main {
     gap: 15px;
 }
 
-#avatar {
-    width: 150px;   /* maior e destacado */
+/* ⚠️ Avatar da página de edição — usa classe própria para NÃO conflitar com #avatar do header */
+.avatar-section .perfil-avatar {
+    width: 150px;
     height: 150px;
     background-color: #333;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 48px;
+    font-weight: bold;
 }
 
 #alterar-foto {
@@ -104,22 +71,23 @@ main {
     flex-direction: column;
 }
 
-label {
+.form-section label {
     font-weight: bold;
     margin-bottom: 5px;
 }
 
-input[type="text"],
-input[type="email"],
-input[type="password"] {
+.form-section input[type="text"],
+.form-section input[type="email"],
+.form-section input[type="password"] {
     width: 100%;
     padding: 12px;
     border: 1px solid #ccc;
     border-radius: 6px;
     font-size: 1em;
+    box-sizing: border-box;
 }
 
-/* Ações */
+/* Ações do formulário */
 .form-actions {
     display: flex;
     justify-content: space-between;
@@ -127,7 +95,7 @@ input[type="password"] {
 }
 
 button.confirmar {
-    background-color: #162745; /* azul escuro */
+    background-color: #162745;
     color: #fff;
     border: none;
     padding: 12px 20px;
@@ -137,33 +105,11 @@ button.confirmar {
 }
 
 #excluir-conta {
-    background-color: #C09E68; /* dourado/bege escuro */
+    background-color: #C09E68;
     color: #fff;
     border: none;
     padding: 12px 20px;
     cursor: pointer;
     border-radius: 5px;
     font-weight: bold;
-}
-
-/* Footer */
-footer {
-    background-color: #C09E68;
-    color: #FCF4E9;
-    text-align: center;
-    padding: 20px;
-}
-
-footer ul {
-    list-style: none;
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin: 0;
-    padding: 0;
-}
-
-footer a {
-    color: #FCF4E9;
-    text-decoration: none;
 }
