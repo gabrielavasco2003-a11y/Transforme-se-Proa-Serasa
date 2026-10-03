@@ -1,10 +1,5 @@
 // ================================================================
 // script.js — compartilhado por todas as páginas
-// - Mantém o usuário logado (pergunta ao backend /api/me)
-// - Alterna entre #nav-visitante e #user-menu
-// - Cards de livro abrem book.html?volumeId=...
-// - Setas de rolagem nas seções (só no index.html)
-// - Botão X para fechar o dropdown + clique fora + ESC
 // ================================================================
 
 const IMG_FALLBACK = '/img/sem-capa.jpg';
@@ -164,70 +159,61 @@ async function carregarNovos() {
   }
 }
 
-/* ================= FUNÇÃO AUXILIAR: FECHAR DROPDOWN ================= */
+/* ================= FUNÇÃO AUXILIAR: FECHAR / TOGGLE DROPDOWN ================= */
 function fecharDropdown() {
   const dropdown = document.getElementById('dropdown');
   const avatar   = document.getElementById('avatar');
   if (dropdown) {
     dropdown.classList.add('hidden');
     dropdown.hidden = true;
+    dropdown.style.display = 'none';
   }
   if (avatar) avatar.setAttribute('aria-expanded', 'false');
 }
 
-/* ================= FUNÇÃO AUXILIAR: ABRIR/FECHAR DROPDOWN ================= */
 function toggleDropdown() {
   const dropdown = document.getElementById('dropdown');
   const avatar   = document.getElementById('avatar');
   if (!dropdown) return;
   const estaAberto = !dropdown.classList.contains('hidden');
   if (estaAberto) {
-    dropdown.classList.add('hidden');
-    dropdown.hidden = true;
-    if (avatar) avatar.setAttribute('aria-expanded', 'false');
+    fecharDropdown();
   } else {
     dropdown.classList.remove('hidden');
     dropdown.hidden = false;
+    dropdown.style.display = 'block';
     if (avatar) avatar.setAttribute('aria-expanded', 'true');
   }
 }
 
-/* ================= HEADER: listeners diretos (à prova de balas) ================= */
+/* ================= BIND DOS LISTENERS DO HEADER ================= */
+/* Roda sempre (logado ou não). Se já anexou, não duplica. */
 function bindHeaderListeners() {
-  const avatar       = document.getElementById('avatar');
-  const dropdown     = document.getElementById('dropdown');
-  const fecharBtn    = document.getElementById('fechar-dropdown');
-  const userMenu     = document.getElementById('user-menu');
-  const logoutBtn    = document.getElementById('logout');
+  const avatar    = document.getElementById('avatar');
+  const dropdown  = document.getElementById('dropdown');
+  const fecharBtn = document.getElementById('fechar-dropdown');
+  const logoutBtn = document.getElementById('logout');
+  const userMenu  = document.getElementById('user-menu');
 
   if (!avatar || !dropdown) return;
 
-  // ---- Avatar: alterna o dropdown ----
-  // Usa cloneNode para remover listeners antigos e evitar duplicação
-  const novoAvatar = avatar.cloneNode(true);
-  avatar.parentNode.replaceChild(novoAvatar, avatar);
+  // ---- Avatar: alterna dropdown ----
+  if (!avatar.dataset.bound) {
+    avatar.dataset.bound = 'true';
+    avatar.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleDropdown();
+    });
+  }
 
-  novoAvatar.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleDropdown();
-  });
-
-  // ---- Botão X: fecha o dropdown ----
-  // Reanexa direto no botão (não depende de listener global)
-  if (fecharBtn) {
-    const novoFechar = fecharBtn.cloneNode(true);
-    fecharBtn.parentNode.replaceChild(novoFechar, fecharBtn);
-
-    novoFechar.addEventListener('click', (e) => {
+  // ---- Botão X: fecha dropdown ----
+  if (fecharBtn && !fecharBtn.dataset.bound) {
+    fecharBtn.dataset.bound = 'true';
+    fecharBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       fecharDropdown();
-    });
-
-    // Fallback: pointerdown também, caso algum outro script bloqueie o click
-    novoFechar.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
     });
   }
 
@@ -244,16 +230,13 @@ function bindHeaderListeners() {
   }
 
   // ---- Clique fora do menu fecha ----
-  // Registra UMA vez (se ainda não registrado)
   if (!window.__headerOutsideBound) {
     window.__headerOutsideBound = true;
     document.addEventListener('click', (e) => {
       const um = document.getElementById('user-menu');
       const dd = document.getElementById('dropdown');
       if (!um || !dd) return;
-      // Se clicou dentro do user-menu, não faz nada (avatar/X já cuidam)
       if (um.contains(e.target)) return;
-      // Se clicou fora, fecha
       fecharDropdown();
     });
   }
@@ -283,7 +266,6 @@ async function checarSessao() {
   } catch (_) { /* sem backend → trata como visitante */ }
 
   if (user) {
-    // ---- LOGADO ----
     if (navVisitante) {
       navVisitante.hidden = true;
       navVisitante.classList.add('hidden');
@@ -298,11 +280,7 @@ async function checarSessao() {
       const nome = user.usuario || user.nome || user.email || '?';
       avatarInit.textContent = String(nome).trim().charAt(0).toUpperCase() || '?';
     }
-
-    // Anexa os listeners do header (avatar, X, logout, clique fora, ESC)
-    bindHeaderListeners();
   } else {
-    // ---- VISITANTE ----
     if (navVisitante) {
       navVisitante.hidden = false;
       navVisitante.classList.remove('hidden');
@@ -322,7 +300,12 @@ function init() {
   safeRun('carregarEmAlta', () => carregarEmAlta());
   safeRun('carregarJabuti', () => carregarJabuti());
   safeRun('carregarNovos',  () => carregarNovos());
-  safeRun('checarSessao',   () => checarSessao());
+
+  // 👇 Anexa listeners do header SEMPRE (logado ou não)
+  safeRun('bindHeaderListeners', () => bindHeaderListeners());
+
+  // Depois verifica sessão (pode rodar em paralelo)
+  safeRun('checarSessao', () => checarSessao());
 }
 
 if (document.readyState === 'loading') {

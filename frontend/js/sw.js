@@ -1,25 +1,18 @@
 // Service Worker — Spoiler Esperado
-// v2 — não cacheia JS/CSS próprios (evita servir versão antiga após deploy)
+// v2 — NUNCA cacheia JS/CSS próprios (evita servir versão antiga após deploy)
 
-const CACHE_NAME = 'spoiler-esperado-v2';   // 👈 incrementado de v1 → v2
+const CACHE_NAME = 'spoiler-esperado-v2';   // 👈 v1 → v2
 
-// Só pré-cacheia o essencial (HTML estático)
 const PRECACHE = [
   '/',
-  '/index.html',
-  '/login.html',
-  '/cadastro.html'
+  '/index.html'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache =>
-      Promise.all(
-        PRECACHE.map(url =>
-          cache.add(url).catch(err => console.warn('Falha ao cachear', url, err))
-        )
-      )
-    ).then(() => self.skipWaiting())   // 👈 ativa imediatamente
+      Promise.all(PRECACHE.map(url => cache.add(url).catch(() => {})))
+    ).then(() => self.skipWaiting())
   );
 });
 
@@ -41,8 +34,10 @@ self.addEventListener('fetch', (event) => {
   // Só GET
   if (request.method !== 'GET') return;
 
-  // 🔴 NUNCA cachear JS e CSS próprios — sempre da rede
-  if (url.pathname.startsWith('/js/') || url.pathname.startsWith('/css/') || url.pathname.endsWith('/sw.js')) {
+  // 🔴 JS, CSS e o próprio sw.js NUNCA do cache
+  if (url.pathname.startsWith('/js/') ||
+      url.pathname.startsWith('/css/') ||
+      url.pathname.endsWith('/sw.js')) {
     event.respondWith(
       fetch(request).catch(() => caches.match(request))
     );
@@ -59,22 +54,19 @@ self.addEventListener('fetch', (event) => {
           return res;
         })
         .catch(() =>
-          caches.match(request).then(cached =>
-            cached || caches.match('/index.html')
-          )
+          caches.match(request).then(cached => cached || caches.match('/index.html'))
         )
     );
     return;
   }
 
-  // Outros estáticos (imagens, JSON) → cache-first com atualização em background
+  // Outros estáticos (imagens, JSON) → cache-first com update em background
   event.respondWith(
     caches.match(request).then(cached => {
       const fetchPromise = fetch(request)
         .then(res => {
           if (res && res.status === 200) {
-            const copy = res.clone();
-            caches.open(CACHE_NAME).then(c => c.put(request, copy));
+            caches.open(CACHE_NAME).then(c => c.put(request, res.clone()));
           }
           return res;
         })
