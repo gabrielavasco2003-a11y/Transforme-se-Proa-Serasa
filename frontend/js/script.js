@@ -264,8 +264,8 @@ safeRun('click global do header', () => {
 
     if (!userMenu || !dropdown) return;
 
-    // 1. Clique no botão X?
-    if (e.target.closest('#fechar-dropdown')) {
+    // 1. Clique no botão X (ou em qualquer pai dele)?
+    if (e.target.closest('#fechar-dropdown') || e.target.closest('.dropdown-close-item')) {
       e.preventDefault();
       e.stopPropagation();
       fecharDropdown();
@@ -280,7 +280,7 @@ safeRun('click global do header', () => {
 
     // 3. Clique fora do menu → fecha
     fecharDropdown();
-  });
+  }, true);   // 👈 CAPTURE PHASE — roda antes de qualquer outro listener
 });
 
 /* Fechar com ESC (acessibilidade) */

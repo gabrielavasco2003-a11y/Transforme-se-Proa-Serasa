@@ -283,25 +283,39 @@ footer a {
    Botão X para fechar o dropdown do usuário
    ============================================ */
 
+/* O <li> não captura clique, só serve de container */
 .dropdown-close-item {
     display: flex !important;
     justify-content: flex-end !important;
-    padding: 0 8px 4px 8px !important;
+    align-items: center !important;
+    padding: 0 !important;
     margin: 0 !important;
+    width: 100% !important;
     border-bottom: 1px solid #eee;
-    margin-bottom: 4px !important;
+    background: transparent !important;
+    pointer-events: none;   /* 👈 clique passa direto pelo <li> */
+    cursor: default !important;
 }
 
+/* Remove o hover do <li> que dá impressão de clicável */
+.dropdown-close-item:hover {
+    background: transparent !important;
+}
+
+/* O botão X captura o clique */
 .dropdown-close {
     background: transparent;
     border: none;
     color: #666;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     line-height: 1;
-    padding: 6px 10px;
-    border-radius: 6px;
+    width: 100% !important;        /* 👈 ocupa todo o <li> */
+    padding: 10px 15px !important; /* 👈 área de clique igual aos outros itens */
+    text-align: right;
+    border-radius: 0;
+    pointer-events: auto;          /* 👈 recebe o clique */
     transition: background 0.15s ease, color 0.15s ease;
 }
 
@@ -312,5 +326,5 @@ footer a {
 
 .dropdown-close:focus {
     outline: 2px solid #B89764;
-    outline-offset: 1px;
+    outline-offset: -2px;
 }
