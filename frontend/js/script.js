@@ -175,14 +175,104 @@ function fecharDropdown() {
   if (avatar) avatar.setAttribute('aria-expanded', 'false');
 }
 
+/* ================= FUNÇÃO AUXILIAR: ABRIR/FECHAR DROPDOWN ================= */
+function toggleDropdown() {
+  const dropdown = document.getElementById('dropdown');
+  const avatar   = document.getElementById('avatar');
+  if (!dropdown) return;
+  const estaAberto = !dropdown.classList.contains('hidden');
+  if (estaAberto) {
+    dropdown.classList.add('hidden');
+    dropdown.hidden = true;
+    if (avatar) avatar.setAttribute('aria-expanded', 'false');
+  } else {
+    dropdown.classList.remove('hidden');
+    dropdown.hidden = false;
+    if (avatar) avatar.setAttribute('aria-expanded', 'true');
+  }
+}
+
+/* ================= HEADER: listeners diretos (à prova de balas) ================= */
+function bindHeaderListeners() {
+  const avatar       = document.getElementById('avatar');
+  const dropdown     = document.getElementById('dropdown');
+  const fecharBtn    = document.getElementById('fechar-dropdown');
+  const userMenu     = document.getElementById('user-menu');
+  const logoutBtn    = document.getElementById('logout');
+
+  if (!avatar || !dropdown) return;
+
+  // ---- Avatar: alterna o dropdown ----
+  // Usa cloneNode para remover listeners antigos e evitar duplicação
+  const novoAvatar = avatar.cloneNode(true);
+  avatar.parentNode.replaceChild(novoAvatar, avatar);
+
+  novoAvatar.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleDropdown();
+  });
+
+  // ---- Botão X: fecha o dropdown ----
+  // Reanexa direto no botão (não depende de listener global)
+  if (fecharBtn) {
+    const novoFechar = fecharBtn.cloneNode(true);
+    fecharBtn.parentNode.replaceChild(novoFechar, fecharBtn);
+
+    novoFechar.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fecharDropdown();
+    });
+
+    // Fallback: pointerdown também, caso algum outro script bloqueie o click
+    novoFechar.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // ---- Logout ----
+  if (logoutBtn && !logoutBtn.dataset.bound) {
+    logoutBtn.dataset.bound = 'true';
+    logoutBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        await fetch('/api/logout', { credentials: 'same-origin' });
+      } catch (_) { /* ignora */ }
+      window.location.href = '/index.html';
+    });
+  }
+
+  // ---- Clique fora do menu fecha ----
+  // Registra UMA vez (se ainda não registrado)
+  if (!window.__headerOutsideBound) {
+    window.__headerOutsideBound = true;
+    document.addEventListener('click', (e) => {
+      const um = document.getElementById('user-menu');
+      const dd = document.getElementById('dropdown');
+      if (!um || !dd) return;
+      // Se clicou dentro do user-menu, não faz nada (avatar/X já cuidam)
+      if (um.contains(e.target)) return;
+      // Se clicou fora, fecha
+      fecharDropdown();
+    });
+  }
+
+  // ---- ESC fecha ----
+  if (!window.__headerEscBound) {
+    window.__headerEscBound = true;
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      fecharDropdown();
+    });
+  }
+}
+
 /* ================= SESSÃO / LOGIN PERSISTENTE ================= */
 async function checarSessao() {
   const navVisitante = document.getElementById('nav-visitante');
   const userMenu     = document.getElementById('user-menu');
-  const avatar       = document.getElementById('avatar');
   const avatarInit   = document.getElementById('avatar-initial');
-  const dropdown     = document.getElementById('dropdown');
-  const logoutBtn    = document.getElementById('logout');
 
   if (!navVisitante && !userMenu) return;
 
@@ -209,31 +299,8 @@ async function checarSessao() {
       avatarInit.textContent = String(nome).trim().charAt(0).toUpperCase() || '?';
     }
 
-    // Reanexa o clique do avatar (cloneNode evita duplicação de listeners)
-    if (avatar && dropdown) {
-      const novoAvatar = avatar.cloneNode(true);
-      avatar.parentNode.replaceChild(novoAvatar, avatar);
-
-      novoAvatar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const estaAberto = !dropdown.classList.contains('hidden');
-        dropdown.classList.toggle('hidden', estaAberto);
-        dropdown.hidden = estaAberto;
-        novoAvatar.setAttribute('aria-expanded', String(!estaAberto));
-      });
-    }
-
-    // Logout (evita duplicação com dataset)
-    if (logoutBtn && !logoutBtn.dataset.bound) {
-      logoutBtn.dataset.bound = 'true';
-      logoutBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        try {
-          await fetch('/api/logout', { credentials: 'same-origin' });
-        } catch (_) { /* ignora */ }
-        window.location.href = '/index.html';
-      });
-    }
+    // Anexa os listeners do header (avatar, X, logout, clique fora, ESC)
+    bindHeaderListeners();
   } else {
     // ---- VISITANTE ----
     if (navVisitante) {
@@ -249,47 +316,6 @@ async function checarSessao() {
     fecharDropdown();
   }
 }
-
-/* ================= CLIQUE GLOBAL (fechar fora + botão X) ================= */
-/*
-   Um único listener de clique no document resolve os dois casos:
-   1. Se clicou no X → fecha o dropdown
-   2. Se clicou fora do menu → fecha o dropdown
-   3. Se clicou dentro do menu (mas não no X) → não faz nada
-*/
-safeRun('click global do header', () => {
-  document.addEventListener('click', (e) => {
-    const userMenu = document.getElementById('user-menu');
-    const dropdown = document.getElementById('dropdown');
-
-    if (!userMenu || !dropdown) return;
-
-    // 1. Clique no botão X (ou em qualquer pai dele)?
-    if (e.target.closest('#fechar-dropdown') || e.target.closest('.dropdown-close-item')) {
-      e.preventDefault();
-      e.stopPropagation();
-      fecharDropdown();
-      return;
-    }
-
-    // 2. Clique dentro do menu (mas não no X)?
-    if (userMenu.contains(e.target)) {
-      // Ignora — deixa o listener do avatar cuidar
-      return;
-    }
-
-    // 3. Clique fora do menu → fecha
-    fecharDropdown();
-  }, true);   // 👈 CAPTURE PHASE — roda antes de qualquer outro listener
-});
-
-/* Fechar com ESC (acessibilidade) */
-safeRun('fechar dropdown (ESC)', () => {
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    fecharDropdown();
-  });
-});
 
 /* ================= INICIALIZAÇÃO BLINDADA ================= */
 function init() {
