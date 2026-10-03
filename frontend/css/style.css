@@ -102,8 +102,7 @@ nav a {
     z-index: 100;
     list-style: none;
     margin: 0;
-    /* Sobrescreve o "nav ul { display: flex }" */
-    display: block !important;
+    /* SEM display — deixa o .hidden controlar */
 }
 
 #dropdown li {
