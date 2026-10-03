@@ -117,6 +117,12 @@ app.get('/shelf',             (req, res) => sendHtmlFile('shelf.html', res));
 app.get('/edit-shelf.html',   (req, res) => sendHtmlFile('edit-shelf.html', res));
 app.get('/edit-shelf',        (req, res) => sendHtmlFile('edit-shelf.html', res));
 
+app.get('/book.html',         (req, res) => sendHtmlFile('book.html', res));
+app.get('/book',              (req, res) => sendHtmlFile('book.html', res));
+
+app.get('/busca.html',        (req, res) => sendHtmlFile('busca.html', res));
+app.get('/busca',             (req, res) => sendHtmlFile('busca.html', res));
+
 app.get('/recuperar-email.html',  (req, res) => sendHtmlFile('recuperar-email.html', res));
 app.get('/recuperar-codigo.html', (req, res) => sendHtmlFile('recuperar-codigo.html', res));
 app.get('/recuperar-senha.html',  (req, res) => sendHtmlFile('recuperar-senha.html', res));
@@ -128,14 +134,18 @@ const MONGO_URI = process.env.MONGO_URI;
 
 // ---------- SESSÃO ----------
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'dev-secret-troque-em-producao',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: MONGO_URI, collectionName: 'sessions' }),
+  store: MongoStore.create({
+    mongoUrl: MONGO_URI,
+    collectionName: 'sessions',
+    ttl: 60 * 60 * 24 // 24h
+  }),
   cookie: {
     maxAge: 1000 * 60 * 60 * 24,
     sameSite: 'lax',
-    secure: false,
+    secure: 'auto',      // HTTP local = false, HTTPS (Render) = true
     httpOnly: true
   }
 }));
@@ -224,7 +234,7 @@ const CommentSchema = new mongoose.Schema({
 });
 const Comment = mongoose.model('Comment', CommentSchema);
 
-// ---------- MODELO: RATING (nota do usuário por livro) ----------
+// ---------- MODELO: RATING ----------
 const RatingSchema = new mongoose.Schema({
   userId:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   bookVolumeId: { type: String, required: true, index: true },
@@ -445,8 +455,16 @@ app.post('/api/validar-telefone/validar', async (req, res) => {
 const GOOGLE_BOOKS_BASE = 'https://www.googleapis.com/books/v1/volumes';
 const GOOGLE_API_KEY = process.env.GOOGLE_BOOKS_API_KEY;
 
+// Monta a URL base com a chave (só se existir) — evita `key=undefined`
+function buildGoogleBooksUrl(pathAndQuery) {
+  const sep = pathAndQuery.includes('?') ? '&' : '?';
+  return GOOGLE_API_KEY
+    ? `${GOOGLE_BOOKS_BASE}${pathAndQuery}${sep}key=${GOOGLE_API_KEY}`
+    : `${GOOGLE_BOOKS_BASE}${pathAndQuery}`;
+}
+
 async function fetchGoogleBookByVolumeId(volumeId) {
-  const url = `${GOOGLE_BOOKS_BASE}/${encodeURIComponent(volumeId)}?key=${GOOGLE_API_KEY}`;
+  const url = buildGoogleBooksUrl(`/${encodeURIComponent(volumeId)}`);
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('Erro ao consultar Google Books');
   return resp.json();
@@ -635,69 +653,80 @@ app.get('/api/reactions', (req, res) => {
 // ================================================================
 // ============ GOOGLE BOOKS (proxy seguro) =======================
 // ================================================================
+
+// Helper: mapeia um item da Google Books para o formato do front
+function mapGoogleItem(item) {
+  const info = item.volumeInfo || {};
+  return {
+    volumeId: item.id,
+    title: info.title || '',
+    authors: info.authors || [],
+    thumbnail: info.imageLinks?.thumbnail || '',
+    averageRating: info.averageRating || 0,
+    ratingsCount: info.ratingsCount || 0,
+    publishedDate: info.publishedDate || '',
+    categories: info.categories || [],
+    description: info.description || ''
+  };
+}
+
+// Helper: chama a Google Books com várias tentativas até achar itens
+async function fetchGoogleBooksWithFallback(tentativas) {
+  let ultimoStatus = 0;
+  for (const t of tentativas) {
+    try {
+      const url = new URL(GOOGLE_BOOKS_BASE);
+      Object.entries(t).forEach(([k, v]) => {
+        if (v != null) url.searchParams.set(k, String(v));
+      });
+      if (GOOGLE_API_KEY) url.searchParams.set('key', GOOGLE_API_KEY);
+
+      const resp = await fetch(url);
+      if (!resp.ok) {
+        ultimoStatus = resp.status;
+        const erro = await resp.text();
+        console.error('Google Books erro:', resp.status, erro.slice(0, 200));
+        continue;
+      }
+      const data = await resp.json();
+      if (data.items && data.items.length) {
+        return { items: data.items, totalItems: data.totalItems || data.items.length };
+      }
+    } catch (e) {
+      console.error('Falha em tentativa Google Books:', e.message);
+    }
+  }
+  return { items: [], totalItems: 0, ultimoStatus };
+}
+
+// GET /api/books/em-alta
 app.get('/api/books/em-alta', async (req, res) => {
   try {
-    const url = `${GOOGLE_BOOKS_BASE}?q=best+seller&maxResults=10&key=${GOOGLE_API_KEY}`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      const erro = await resp.text();
-      console.error('Google Books erro:', resp.status, erro);
-      return res.status(resp.status).json({ mensagem: 'Erro ao consultar Google Books.' });
-    }
-    const data = await resp.json();
-    return res.json({
-      totalItems: data.totalItems || 0,
-      items: (data.items || []).map(item => {
-        const info = item.volumeInfo || {};
-        return {
-          volumeId: item.id,
-          title: info.title || '',
-          authors: info.authors || [],
-          thumbnail: info.imageLinks?.thumbnail || '',
-          averageRating: info.averageRating || 0,
-          ratingsCount: info.ratingsCount || 0,
-          publishedDate: info.publishedDate || '',
-          categories: info.categories || [],
-          description: info.description || ''
-        };
-      })
-    });
+    const { items, totalItems } = await fetchGoogleBooksWithFallback([
+      { q: 'best seller',       maxResults: 10, printType: 'books' },
+      { q: 'subject:fiction',   maxResults: 10, orderBy: 'relevance', printType: 'books' },
+      { q: 'harry potter',      maxResults: 10, printType: 'books' }
+    ]);
+    return res.json({ totalItems, items: items.map(mapGoogleItem) });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ mensagem: 'Erro ao buscar livros em alta.' });
+    console.error('Erro em /api/books/em-alta:', err);
+    return res.json({ totalItems: 0, items: [] });
   }
 });
 
+// GET /api/books/novos
 app.get('/api/books/novos', async (req, res) => {
   try {
-    const url = `${GOOGLE_BOOKS_BASE}?q=subject:fiction&orderBy=newest&maxResults=10&key=${GOOGLE_API_KEY}`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      const erro = await resp.text();
-      console.error('Google Books erro:', resp.status, erro);
-      return res.status(resp.status).json({ mensagem: 'Erro ao consultar Google Books.' });
-    }
-    const data = await resp.json();
-    return res.json({
-      totalItems: data.totalItems || 0,
-      items: (data.items || []).map(item => {
-        const info = item.volumeInfo || {};
-        return {
-          volumeId: item.id,
-          title: info.title || '',
-          authors: info.authors || [],
-          thumbnail: info.imageLinks?.thumbnail || '',
-          averageRating: info.averageRating || 0,
-          ratingsCount: info.ratingsCount || 0,
-          publishedDate: info.publishedDate || '',
-          categories: info.categories || [],
-          description: info.description || ''
-        };
-      })
-    });
+    const { items, totalItems } = await fetchGoogleBooksWithFallback([
+      { q: 'subject:fiction', orderBy: 'newest',    maxResults: 12, printType: 'books', langRestrict: 'pt' },
+      { q: 'subject:fiction', orderBy: 'newest',    maxResults: 12, printType: 'books' },
+      { q: 'romance',         orderBy: 'newest',    maxResults: 12, printType: 'books' },
+      { q: 'fiction',         orderBy: 'relevance', maxResults: 12, printType: 'books' }
+    ]);
+    return res.json({ totalItems, items: items.map(mapGoogleItem) });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ mensagem: 'Erro ao buscar livros novos.' });
+    console.error('Erro em /api/books/novos:', err);
+    return res.json({ totalItems: 0, items: [] });
   }
 });
 
@@ -716,10 +745,9 @@ app.get('/api/books/search', async (req, res) => {
     url.searchParams.set('maxResults', maxResults);
     url.searchParams.set('orderBy', orderBy);
     if (startIndex) url.searchParams.set('startIndex', startIndex);
-    url.searchParams.set('key', GOOGLE_API_KEY);
+    if (GOOGLE_API_KEY) url.searchParams.set('key', GOOGLE_API_KEY);
 
     const resp = await fetch(url);
-
     const text = await resp.text();
     res.status(resp.status).type('application/json').send(text);
   } catch (err) {
@@ -946,7 +974,6 @@ app.post('/api/shelf/add', async (req, res) => {
 
     const exists = await ShelfItem.findOne({ userId: req.user._id, volumeId });
     if (exists) {
-      // Já está na estante → atualiza status
       exists.status = statusFinal;
       exists.updatedAt = new Date();
       await exists.save();
@@ -1060,7 +1087,12 @@ app.get('/api/search', async (req, res) => {
 
 // ---------- LOGOUT ----------
 app.get('/api/logout', (req, res) => {
-  req.logout(() => req.session.destroy(() => res.json({ mensagem: 'Logout efetuado' })));
+  req.logout(() => {
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid');
+      res.json({ mensagem: 'Logout efetuado' });
+    });
+  });
 });
 
 // ---------- START ----------
