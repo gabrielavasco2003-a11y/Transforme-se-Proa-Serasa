@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spoiler Esperado</title>
-    <!-- CSS correto -->
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
@@ -15,32 +15,32 @@
     </div>
 
     <!-- Busca centralizada -->
+    <div id="search">
+        <form id="search-form" action="busca.html" method="get">
+            <input type="text" name="q" id="search-input" placeholder="Insira palavras-chave" aria-label="Buscar livros">
+            <button type="submit">Pesquisar</button>
+        </form>
+    </div>
 
-<div id="search">
-    <form id="search-form" action="busca.html" method="get">
-        <input type="text" name="q" id="search-input" placeholder="Insira palavras-chave">
-        <button type="submit">Pesquisar</button>
-    </form>
-</div>
-
-    <!-- Nav com Cadastro/Login -->
-    <nav>
+    <!-- Nav visitante (Cadastro/Login) -->
+    <nav id="nav-visitante">
         <ul>
             <li><a href="cadastro.html">Cadastro</a></li>
             <li><a href="login.html">Login</a></li>
         </ul>
     </nav>
 
-    <!-- Menu do usuário (aparece só após login) -->
-    <div id="user-menu" style="display: none;">
-        <div id="avatar"></div>
-        <div id="dropdown" class="hidden">
+    <!-- Menu do usuário logado (escondido por padrão; JS mostra se logado) -->
+    <div id="user-menu" class="hidden" hidden>
+        <button id="avatar" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Menu do usuário">
+            <span id="avatar-initial">?</span>
+        </button>
+        <div id="dropdown" class="hidden" role="menu">
             <ul>
+                <li><a href="perfil.html">Meu Perfil</a></li>
+                <li><a href="shelf.html">Minha Estante</a></li>
                 <li><a href="editar-perfil.html">Editar Perfil</a></li>
-                <li><a href="estante.html">Minha Biblioteca</a></li>
-                <li><a href="cadastrar-livros.html">Cadastrar Livros</a></li>
-                <li><a href="configuracoes.html">Configurações</a></li>
-                <li><a href="#" id="logout">Logout</a></li>
+                <li><a href="#" id="logout" role="menuitem">Logout</a></li>
             </ul>
         </div>
     </div>
@@ -49,7 +49,7 @@
 <section id="banner">
     <div class="banner-content">
         <div class="banner-logo">
-            <img src="/../img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
+            <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
             <br><br>
             <p>Descubra histórias, conecte-se.</p>
         </div>
@@ -61,43 +61,27 @@
 
 <main>
     <!-- Seção Em Alta -->
-    <section class="livros-section">
+    <section class="livros-section" data-section="em-alta">
         <h2>Em Alta</h2>
-        <button class="arrow left">&#10094;</button>
-        <div class="livros">
-            <article>
-                <img src="" alt="">
-                <p class="titulo">Título</p>
-            </article>
-        </div>
-        <button class="arrow right">&#10095;</button>
+        <button class="arrow left" type="button" aria-label="Rolar para a esquerda">&#10094;</button>
+        <div class="livros" aria-live="polite"></div>
+        <button class="arrow right" type="button" aria-label="Rolar para a direita">&#10095;</button>
     </section>
 
     <!-- Seção Prêmio Jabuti -->
-    <section class="livros-section">
+    <section class="livros-section" data-section="jabuti">
         <h2>Prêmio Jabuti</h2>
-        <button class="arrow left">&#10094;</button>
-        <div class="livros">
-            <article>
-                <img src="" alt="">
-                <p class="titulo">Título</p>
-                <p class="estrelas">★★★★☆</p>
-            </article>
-        </div>
-        <button class="arrow right">&#10095;</button>
+        <button class="arrow left" type="button" aria-label="Rolar para a esquerda">&#10094;</button>
+        <div class="livros" aria-live="polite"></div>
+        <button class="arrow right" type="button" aria-label="Rolar para a direita">&#10095;</button>
     </section>
 
     <!-- Seção Novos -->
-    <section class="livros-section">
+    <section class="livros-section" data-section="novos">
         <h2>Novos</h2>
-        <button class="arrow left">&#10094;</button>
-        <div class="livros">
-            <article>
-                <img src="" alt="">
-                <p class="titulo">Título</p>
-            </article>
-        </div>
-        <button class="arrow right">&#10095;</button>
+        <button class="arrow left" type="button" aria-label="Rolar para a esquerda">&#10094;</button>
+        <div class="livros" aria-live="polite"></div>
+        <button class="arrow right" type="button" aria-label="Rolar para a direita">&#10095;</button>
     </section>
 </main>
 
@@ -112,7 +96,6 @@
     </ul>
 </footer>
 
-<!-- JS correto -->
 <script src="../js/offline.js"></script>
 <script src="../js/script.js"></script>
 </body>
