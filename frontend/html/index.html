@@ -36,6 +36,7 @@
 
     <!-- Menu do usuário logado -->
     <nav id="user-menu" class="hidden" hidden aria-label="Menu do usuário">
+        <!-- Avatar: SÓ ABRE -->
         <button
             id="avatar"
             type="button"
@@ -44,30 +45,22 @@
             aria-controls="dropdown"
             aria-label="Abrir menu do usuário"
             onclick="
-                if (event.target !== this) return;
                 event.preventDefault();
                 var d = document.getElementById('dropdown');
                 var a = document.getElementById('avatar');
                 if (!d) return;
-                var aberto = !d.classList.contains('hidden');
-                if (aberto) {
-                    d.classList.add('hidden');
-                    d.hidden = true;
-                    d.style.display = 'none';
-                    if (a) a.setAttribute('aria-expanded', 'false');
-                } else {
-                    d.classList.remove('hidden');
-                    d.hidden = false;
-                    d.style.display = 'block';
-                    if (a) a.setAttribute('aria-expanded', 'true');
-                }
+                d.classList.remove('hidden');
+                d.hidden = false;
+                d.style.display = 'block';
+                if (a) a.setAttribute('aria-expanded', 'true');
             "
         >
             <span id="avatar-initial" aria-hidden="true">?</span>
         </button>
 
+        <!-- Dropdown -->
         <ul id="dropdown" class="hidden" role="menu" hidden>
-            <!-- Botão X para fechar -->
+            <!-- Botão X: SÓ FECHA -->
             <li role="none" class="dropdown-close-item">
                 <button
                     id="fechar-dropdown"
