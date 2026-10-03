@@ -1,0 +1,307 @@
+/* ============================================
+   Página de Conquistas — estilos específicos
+   Header/footer vêm do style.css
+   ============================================ */
+
+.conquistas-main {
+    max-width: 1100px;
+    margin: 30px auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+/* ---------- Hero ---------- */
+.conquistas-hero {
+    text-align: center;
+    padding: 20px 0 10px;
+}
+
+.conquistas-hero h1 {
+    color: #2A587D;
+    font-size: 2em;
+    margin-bottom: 8px;
+}
+
+.conquistas-hero p {
+    color: #6b6b6b;
+    font-size: 1em;
+}
+
+/* ---------- Seções comuns ---------- */
+.conquistas-main h2 {
+    color: #2A587D;
+    font-size: 1.3em;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #B89764;
+    padding-bottom: 6px;
+}
+
+/* ---------- Estatísticas ---------- */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+}
+
+.stat-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 18px 12px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    border-bottom: 3px solid #B89764;
+    transition: transform 0.15s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #2A587D;
+    line-height: 1;
+}
+
+.stat-label {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.85em;
+    color: #6b6b6b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ---------- Formulário de adicionar livro ---------- */
+.add-book-section {
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.add-book-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-group label {
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #162745;
+}
+
+.form-group input,
+.form-group select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1em;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: 2px solid #B89764;
+    outline-offset: 1px;
+    border-color: #B89764;
+}
+
+.btn-add {
+    background: #162745;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    align-self: flex-start;
+    transition: background 0.15s ease;
+}
+
+.btn-add:hover {
+    background: #2A587D;
+}
+
+/* ---------- Lista da estante ---------- */
+.shelf-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.empty-msg {
+    color: #6b6b6b;
+    font-style: italic;
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 20px;
+}
+
+.book-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-left: 4px solid #ccc;
+}
+
+.book-card.status-quero      { border-left-color: #B89764; }
+.book-card.status-andamento  { border-left-color: #2A587D; }
+.book-card.status-terminei   { border-left-color: #4CAF50; }
+.book-card.status-desisti    { border-left-color: #c0392b; }
+
+.book-card h3 {
+    margin: 0;
+    color: #162745;
+    font-size: 1.05em;
+}
+
+.book-card .book-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.85em;
+    color: #6b6b6b;
+}
+
+.book-card .book-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: bold;
+    text-transform: uppercase;
+    background: #f0f0f0;
+    color: #333;
+}
+
+.book-card.status-terminei .book-status-badge {
+    background: #d4edda;
+    color: #155724;
+}
+
+.book-card .book-rating {
+    color: #B89764;
+    font-weight: bold;
+}
+
+.book-card .book-actions {
+    margin-top: 6px;
+    text-align: right;
+}
+
+.book-card .btn-remove {
+    background: transparent;
+    border: 1px solid #ccc;
+    color: #666;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85em;
+}
+
+.book-card .btn-remove:hover {
+    background: #f5e6e6;
+    color: #c0392b;
+    border-color: #c0392b;
+}
+
+/* ---------- Conquistas ---------- */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.achievement-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.achievement-card.locked {
+    opacity: 0.5;
+    filter: grayscale(1);
+}
+
+.achievement-card.unlocked {
+    border: 2px solid #FFD700;
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.3);
+    animation: pulseUnlock 0.6s ease;
+}
+
+@keyframes pulseUnlock {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.achievement-icon {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin: 0 auto 12px;
+    display: block;
+}
+
+.achievement-card h3 {
+    margin: 0 0 6px;
+    color: #2A587D;
+    font-size: 1em;
+}
+
+.achievement-card p {
+    margin: 0;
+    font-size: 0.85em;
+    color: #6b6b6b;
+    line-height: 1.4;
+}
+
+.achievement-card .unlocked-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #FFD700;
+    color: #162745;
+    font-size: 0.7em;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 600px) {
+    .conquistas-main { gap: 28px; }
+    .conquistas-hero h1 { font-size: 1.5em; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .add-book-section { padding: 16px; }
+    .btn-add { width: 100%; }
+    .achievements-grid { grid-template-columns: 1fr 1fr; }
+    .achievement-icon { width: 60px; height: 60px; }
+}

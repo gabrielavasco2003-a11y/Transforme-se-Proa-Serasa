@@ -129,6 +129,22 @@ app.get('/recuperar-senha.html',  (req, res) => sendHtmlFile('recuperar-senha.ht
 app.get('/validar-telefone.html', (req, res) => sendHtmlFile('validar-telefone.html', res));
 app.get('/validar-codigo.html',   (req, res) => sendHtmlFile('validar-codigo.html', res));
 
+// ---------- ROTAS HTML: INSTITUCIONAIS + CONQUISTAS ----------
+app.get('/quem-somos.html',           (req, res) => sendHtmlFile('quem-somos.html', res));
+app.get('/quem-somos',                (req, res) => sendHtmlFile('quem-somos.html', res));
+
+app.get('/termos-servicos.html',      (req, res) => sendHtmlFile('termos-servicos.html', res));
+app.get('/termos-servicos',           (req, res) => sendHtmlFile('termos-servicos.html', res));
+
+app.get('/politica-privacidade.html', (req, res) => sendHtmlFile('politica-privacidade.html', res));
+app.get('/politica-privacidade',      (req, res) => sendHtmlFile('politica-privacidade.html', res));
+
+app.get('/fale-conosco.html',         (req, res) => sendHtmlFile('fale-conosco.html', res));
+app.get('/fale-conosco',              (req, res) => sendHtmlFile('fale-conosco.html', res));
+
+app.get('/conquistas.html',           (req, res) => sendHtmlFile('conquistas.html', res));
+app.get('/conquistas',                (req, res) => sendHtmlFile('conquistas.html', res));
+
 // ---------- MONGO ----------
 const MONGO_URI = process.env.MONGO_URI;
 
@@ -145,7 +161,7 @@ app.use(session({
   cookie: {
     maxAge: 1000 * 60 * 60 * 24,
     sameSite: 'lax',
-    secure: 'auto',      // HTTP local = false, HTTPS (Render) = true
+    secure: 'auto',
     httpOnly: true
   }
 }));
@@ -455,7 +471,6 @@ app.post('/api/validar-telefone/validar', async (req, res) => {
 const GOOGLE_BOOKS_BASE = 'https://www.googleapis.com/books/v1/volumes';
 const GOOGLE_API_KEY = process.env.GOOGLE_BOOKS_API_KEY;
 
-// Monta a URL base com a chave (só se existir) — evita `key=undefined`
 function buildGoogleBooksUrl(pathAndQuery) {
   const sep = pathAndQuery.includes('?') ? '&' : '?';
   return GOOGLE_API_KEY
@@ -654,7 +669,6 @@ app.get('/api/reactions', (req, res) => {
 // ============ GOOGLE BOOKS (proxy seguro) =======================
 // ================================================================
 
-// Helper: mapeia um item da Google Books para o formato do front
 function mapGoogleItem(item) {
   const info = item.volumeInfo || {};
   return {
@@ -670,7 +684,6 @@ function mapGoogleItem(item) {
   };
 }
 
-// Helper: chama a Google Books com várias tentativas até achar itens
 async function fetchGoogleBooksWithFallback(tentativas) {
   let ultimoStatus = 0;
   for (const t of tentativas) {
@@ -699,7 +712,6 @@ async function fetchGoogleBooksWithFallback(tentativas) {
   return { items: [], totalItems: 0, ultimoStatus };
 }
 
-// GET /api/books/em-alta
 app.get('/api/books/em-alta', async (req, res) => {
   try {
     const { items, totalItems } = await fetchGoogleBooksWithFallback([
@@ -714,7 +726,6 @@ app.get('/api/books/em-alta', async (req, res) => {
   }
 });
 
-// GET /api/books/novos
 app.get('/api/books/novos', async (req, res) => {
   try {
     const { items, totalItems } = await fetchGoogleBooksWithFallback([
@@ -730,9 +741,6 @@ app.get('/api/books/novos', async (req, res) => {
   }
 });
 
-// ================================================================
-// ============ BUSCA LIVRE (proxy /api/books/search) =============
-// ================================================================
 app.get('/api/books/search', async (req, res) => {
   try {
     const q          = String(req.query.q || 'subject:fiction');
@@ -756,7 +764,6 @@ app.get('/api/books/search', async (req, res) => {
   }
 });
 
-// ---------- API: BOOK DETAIL ----------
 app.get('/api/book/:volumeId', async (req, res) => {
   try {
     const { volumeId } = req.params;
@@ -939,7 +946,6 @@ app.get('/api/shelf/item/:volumeId', async (req, res) => {
   }
 });
 
-// POST /api/shelf/add — aceita status e faz upsert (cria OU atualiza)
 app.post('/api/shelf/add', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
@@ -950,7 +956,6 @@ app.post('/api/shelf/add', async (req, res) => {
     const STATUS_VALIDOS = ['quero', 'lendo', 'terminei', 'pausei', 'desisti'];
     const statusFinal = status && STATUS_VALIDOS.includes(status) ? status : 'quero';
 
-    // Snapshot do livro (cache local)
     let snapshot = await BookSnapshot.findOne({ volumeId });
     if (!snapshot) {
       try {
