@@ -1,0 +1,90 @@
+/* ============================================
+   Páginas institucionais (Quem somos, Termos,
+   Política, Fale conosco)
+   Só define o layout do <main>. Header, footer
+   e dropdown vêm do style.css.
+   ============================================ */
+
+.institucional {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.institucional-card {
+    background: #fff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    line-height: 1.7;
+    color: #162745;
+}
+
+.institucional-card h1 {
+    color: #2A587D;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #B89764;
+    font-size: 1.6em;
+}
+
+.institucional-card h2 {
+    color: #2A587D;
+    margin: 24px 0 12px;
+    font-size: 1.2em;
+}
+
+.institucional-card p {
+    margin-bottom: 14px;
+}
+
+.institucional-card ul {
+    margin: 0 0 16px 20px;
+    padding: 0;
+    list-style: disc;
+}
+
+.institucional-card li {
+    margin-bottom: 6px;
+}
+
+.institucional-card a {
+    color: #2A587D;
+    text-decoration: underline;
+}
+
+/* Botão voltar */
+.institucional-actions {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #eee;
+    text-align: right;
+}
+
+.btn-voltar {
+    display: inline-block;
+    background-color: #C09E68;
+    color: #fff !important;
+    text-decoration: none !important;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background 0.2s ease;
+}
+
+.btn-voltar:hover {
+    background-color: #B89764;
+}
+
+/* Responsivo */
+@media (max-width: 600px) {
+    .institucional-card {
+        padding: 24px;
+    }
+    .institucional-card h1 {
+        font-size: 1.3em;
+    }
+    .institucional-actions {
+        text-align: center;
+    }
+}

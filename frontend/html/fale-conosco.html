@@ -3,32 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Spoiler Esperado</title>
-    <!-- CSS correto -->
-     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="../css/login.css">
+    <title>Fale conosco — Spoiler Esperado</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/institucional.css">
 </head>
 <body>
+
 <header role="banner">
-    <!-- Logo -->
     <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
         <img src="/img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
     </a>
 
-    <!-- Busca centralizada -->
     <form id="search-form" action="/busca.html" method="get" role="search">
         <label for="search-input" class="sr-only">Buscar livros</label>
-        <input
-            type="search"
-            name="q"
-            id="search-input"
-            placeholder="Insira palavras-chave"
-            aria-label="Buscar livros"
-        >
+        <input type="search" name="q" id="search-input" placeholder="Insira palavras-chave" aria-label="Buscar livros">
         <button type="submit" id="search-btn">Pesquisar</button>
     </form>
 
-    <!-- Navegação para visitantes (não logados) -->
     <nav id="nav-visitante" aria-label="Navegação de visitante">
         <ul>
             <li><a href="/cadastro.html">Cadastro</a></li>
@@ -36,9 +27,7 @@
         </ul>
     </nav>
 
-    <!-- Menu do usuário logado -->
     <nav id="user-menu" class="hidden" hidden aria-label="Menu do usuário">
-        <!-- Avatar: SÓ ABRE -->
         <button
             id="avatar"
             type="button"
@@ -60,9 +49,7 @@
             <span id="avatar-initial" aria-hidden="true">?</span>
         </button>
 
-        <!-- Dropdown -->
         <ul id="dropdown" class="hidden" role="menu" hidden>
-            <!-- Botão X: SÓ FECHA -->
             <li role="none" class="dropdown-close-item">
                 <button
                     id="fechar-dropdown"
@@ -83,7 +70,6 @@
                     "
                 >✕</button>
             </li>
-
             <li role="none"><a href="/shelf.html" role="menuitem">Minha Estante</a></li>
             <li role="none"><a href="/perfil.html" role="menuitem">Meu Perfil</a></li>
             <li role="none"><a href="/editar-perfil.html" role="menuitem">Editar Perfil</a></li>
@@ -92,55 +78,39 @@
         </ul>
     </nav>
 </header>
-    <main class="login-container">
-        <!-- Lado esquerdo com logo -->
-        <section class="login-left">
-            <!-- Imagem está em Projeto/img -->
-            <img src="../../img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado" class="logo">
-        </section>
 
-        <!-- Lado direito com formulário -->
-        <section class="login-right">
-            <h2>LOGIN</h2>
-            <form id="loginForm">
-                <label for="email">E-mail</label>
-                <input type="email" id="email" placeholder="Digite seu e-mail" required>
+<main class="institucional">
+    <section class="institucional-card">
+        <h1>Fale conosco</h1>
 
-                <label for="senha">Senha</label>
-                <input type="password" id="senha" placeholder="Digite sua senha" required>
+        <!-- ====================================================== -->
+        <!-- ESCREVA O CONTEÚDO AQUI -->
+        <!-- ====================================================== -->
 
-                <button type="submit">Entrar</button>
+        <p>Conteúdo em construção.</p>
 
-                <div class="links">
-                    <a href="#">Esqueceu a senha?</a>
-                    <a href="#">Não tem cadastro?</a>
-                </div>
-            </form>
+        <!-- ====================================================== -->
 
-            <!-- Botão Google FORA do form (evita submit acidental) -->
-            <div class="google-login">
-                <button type="button" onclick="loginGoogle()">
-                    Entrar com Google
-                </button>
-            </div>
-        </section>
-    </main>
+        <div class="institucional-actions">
+            <a href="/index.html" class="btn-voltar">← Voltar para o início</a>
+        </div>
+    </section>
+</main>
 
-    <footer>
+<footer>
     <div id="logo-footer">
         <img src="/img/logo/Logo.svg" alt="Logo Spoiler Esperado">
     </div>
     <ul>
-<li><a href="/quem-somos.html">Quem somos</a></li>
-<li><a href="/termos-servicos.html">Termos e serviços</a></li>
-<li><a href="/politica-privacidade.html">Política de privacidade</a></li>
-<li><a href="/fale-conosco.html">Fale conosco</a></li>
+        <li><a href="/quem-somos.html">Quem somos</a></li>
+        <li><a href="/termos-servicos.html">Termos e serviços</a></li>
+        <li><a href="/politica-privacidade.html">Política de privacidade</a></li>
+        <li><a href="/fale-conosco.html">Fale conosco</a></li>
     </ul>
 </footer>
-    <!-- JS correto -->
 
-    <script src="/js/script.js"></script>
-    <script src="../js/offline.js"></script>   <!-- 👈 ADICIONE ESTA LINHA -->
-    <script src="../js/login.js"></script>
+<script src="/js/offline.js"></script>
+<script src="/js/script.js"></script>
+<script src="/js/institucional.js"></script>
 </body>
 </html>
