@@ -1,3 +1,4 @@
 {
-    "editor.gotoLocation.multipleDefinitions": "goto"
+    "editor.gotoLocation.multipleDefinitions": "goto",
+    "livePreview.defaultPreviewPath": "/frontend/html/edit-shelf.html"
 }

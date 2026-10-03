@@ -8,6 +8,19 @@
 
 const IMG_FALLBACK = '/img/sem-capa.jpg';
 
+/* ================= UTILITÁRIO SEGURO ================= */
+/* Executa fn() e captura qualquer erro sem travar o resto do script */
+function safeRun(label, fn) {
+  try {
+    const r = fn();
+    if (r && typeof r.catch === 'function') {
+      r.catch(err => console.error(`[safeRun] ${label}:`, err));
+    }
+  } catch (err) {
+    console.error(`[safeRun] ${label}:`, err);
+  }
+}
+
 /* ================= HELPERS ================= */
 function escapeHtml(str) {
   return String(str || '').replace(/[&<>"']/g, s => ({
@@ -26,16 +39,18 @@ function pickCover(item) {
 }
 
 /* ================= SETAS DE ROLAGEM (só index) ================= */
-document.querySelectorAll('.arrow').forEach(arrow => {
-  arrow.addEventListener('click', () => {
-    const livros = arrow.parentElement.querySelector('.livros');
-    if (!livros) return;
-    const scrollAmount = 200;
-    if (arrow.classList.contains('left')) {
-      livros.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-    } else {
-      livros.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
+safeRun('setas de rolagem', () => {
+  document.querySelectorAll('.arrow').forEach(arrow => {
+    arrow.addEventListener('click', () => {
+      const livros = arrow.parentElement.querySelector('.livros');
+      if (!livros) return;
+      const scrollAmount = 200;
+      if (arrow.classList.contains('left')) {
+        livros.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      } else {
+        livros.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      }
+    });
   });
 });
 
@@ -183,7 +198,7 @@ async function checarSessao() {
       avatarInit.textContent = String(nome).trim().charAt(0).toUpperCase() || '?';
     }
 
-    // Reanexa o clique do avatar de forma limpa (evita duplicação de listeners)
+    // Reanexa o clique do avatar (cloneNode evita duplicação de listeners)
     if (avatar && dropdown) {
       const novoAvatar = avatar.cloneNode(true);
       avatar.parentNode.replaceChild(novoAvatar, avatar);
@@ -229,40 +244,42 @@ async function checarSessao() {
 
 /* ================= FECHAR DROPDOWN AO CLICAR FORA ================= */
 /* Roda sempre, em qualquer página, com ou sem login. */
-document.addEventListener('click', (e) => {
-  const userMenu = document.getElementById('user-menu');
-  const dropdown = document.getElementById('dropdown');
-  const avatar   = document.getElementById('avatar');
+safeRun('fechar dropdown (click fora)', () => {
+  document.addEventListener('click', (e) => {
+    const userMenu = document.getElementById('user-menu');
+    const dropdown = document.getElementById('dropdown');
+    const avatar   = document.getElementById('avatar');
 
-  if (!userMenu || !dropdown) return;
+    if (!userMenu || !dropdown) return;
+    if (userMenu.contains(e.target)) return;
 
-  // Se o clique foi dentro do menu (avatar ou dropdown), ignora
-  if (userMenu.contains(e.target)) return;
-
-  // Fora do menu → fecha
-  dropdown.classList.add('hidden');
-  dropdown.hidden = true;
-  if (avatar) avatar.setAttribute('aria-expanded', 'false');
+    dropdown.classList.add('hidden');
+    dropdown.hidden = true;
+    if (avatar) avatar.setAttribute('aria-expanded', 'false');
+  });
 });
 
 /* Fechar com ESC (acessibilidade) */
-document.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape') return;
-  const dropdown = document.getElementById('dropdown');
-  const avatar   = document.getElementById('avatar');
-  if (dropdown) {
-    dropdown.classList.add('hidden');
-    dropdown.hidden = true;
-  }
-  if (avatar) avatar.setAttribute('aria-expanded', 'false');
+safeRun('fechar dropdown (ESC)', () => {
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const dropdown = document.getElementById('dropdown');
+    const avatar   = document.getElementById('avatar');
+    if (dropdown) {
+      dropdown.classList.add('hidden');
+      dropdown.hidden = true;
+    }
+    if (avatar) avatar.setAttribute('aria-expanded', 'false');
+  });
 });
 
-/* ================= INICIALIZAÇÃO SEGURA ================= */
+/* ================= INICIALIZAÇÃO BLINDADA ================= */
+/* Cada bloco roda isoladamente. Se um falhar, os outros continuam. */
 function init() {
-  carregarEmAlta();
-  carregarJabuti();
-  carregarNovos();
-  checarSessao();
+  safeRun('carregarEmAlta', () => carregarEmAlta());
+  safeRun('carregarJabuti', () => carregarJabuti());
+  safeRun('carregarNovos',  () => carregarNovos());
+  safeRun('checarSessao',   () => checarSessao());
 }
 
 if (document.readyState === 'loading') {

@@ -12,7 +12,7 @@ const $ = (id) => document.getElementById(id);
 /* ---------- mapa de elementos do DOM ---------- */
 const dom = {
   searchForm:            $("search-form"),
-  searchInput:           $("search-input"),
+searchButton: $("search-btn"),
   searchButton:          $("search-button"),
   booksContainer:        $("books-container"),
   loading:               $("loading"),

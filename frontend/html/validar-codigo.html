@@ -9,12 +9,10 @@
 </head>
 <body>
 <header role="banner">
-    <!-- Logo -->
     <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
         <img src="/img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
     </a>
 
-    <!-- Busca centralizada -->
     <form id="search-form" action="/busca.html" method="get" role="search">
         <label for="search-input" class="sr-only">Buscar livros</label>
         <input
@@ -24,10 +22,9 @@
             placeholder="Insira palavras-chave"
             aria-label="Buscar livros"
         >
-        <button type="submit">Pesquisar</button>
+        <button type="submit" id="search-btn">Pesquisar</button>
     </form>
 
-    <!-- Navegação para visitantes (não logados) -->
     <nav id="nav-visitante" aria-label="Navegação de visitante">
         <ul>
             <li><a href="/cadastro.html">Cadastro</a></li>
@@ -35,7 +32,6 @@
         </ul>
     </nav>
 
-    <!-- Menu do usuário logado (escondido por padrão; JS mostra se logado) -->
     <nav id="user-menu" class="hidden" hidden aria-label="Menu do usuário">
         <button
             id="avatar"
