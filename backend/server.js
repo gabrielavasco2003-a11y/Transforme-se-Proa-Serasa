@@ -7,6 +7,7 @@ const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const User = require('./models/User');
 const path = require('path');
 const fs = require('fs');
 
@@ -180,39 +181,6 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB conectado'))
   .catch(err => console.error('Erro MongoDB:', err));
 
-// ---------- MODELO: USER ----------
-const UserSchema = new mongoose.Schema({
-  nome: String,
-  usuario: String,
-  email: { type: String, index: true },
-  senhaHash: String,
-  telefone: String,
-  telefoneVerificado: { type: Boolean, default: false },
-  nascimento: Date,
-  googleId: String,
-  avatar: { type: String, default: '/img/perfil/1.png' },
-  config: {
-    language:   { type: String, default: 'pt-BR' },
-    dateFormat: { type: String, default: 'DD/MM/YYYY' }
-  },
-  livros: [{
-    volumeId: String,
-    isbn: String,
-    title: String,
-    authors: [String],
-    thumbnail: String,
-    addedAt: { type: Date, default: Date.now },
-    status: { type: String, default: 'quero' }
-  }]
-}, { timestamps: true });
-
-const User = mongoose.model('User', UserSchema);
-
-const sanitize = (user) => {
-  const u = user.toObject ? user.toObject() : { ...user };
-  delete u.senhaHash;
-  return u;
-};
 
 // ---------- MODELO: SHELF ITEM ----------
 const ShelfItemSchema = new mongoose.Schema({
