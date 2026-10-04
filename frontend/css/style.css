@@ -570,3 +570,38 @@ html.dark #logo .logo-escuro {
 
 html.dark .banner-logo .logo-claro { display: none; }
 html.dark .banner-logo .logo-escuro { display: inline-block; }
+/* ============================================
+   BANNER — layout lado a lado + logo clara/escura
+   ============================================ */
+
+#banner .banner-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+html.dark #banner .banner-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+/* Logo clara/escura no banner */
+.banner-logo .logo-claro  { display: inline-block; }
+.banner-logo .logo-escuro { display: none; }
+
+html.dark .banner-logo .logo-claro  { display: none; }
+html.dark .banner-logo .logo-escuro { display: inline-block; }
+
+/* Responsivo */
+@media (max-width: 600px) {
+    #banner .banner-content {
+        flex-direction: column;
+    }
+}
