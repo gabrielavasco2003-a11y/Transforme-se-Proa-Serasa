@@ -876,27 +876,52 @@ app.get('/api/books/search', async (req, res) => {
   }
 });
 
+// ================================================================
+// ============ DETALHE DO LIVRO (prioriza dados locais) ==========
+// ================================================================
 app.get('/api/book/:volumeId', async (req, res) => {
   try {
     const { volumeId } = req.params;
-    let snapshot = await BookSnapshot.findOne({ volumeId });
-    if (snapshot) return res.json({ source: 'db', book: snapshot });
-    const gb = await fetchGoogleBookByVolumeId(volumeId);
-    const info = gb.volumeInfo || {};
-    const snapData = {
-      volumeId,
-      title: info.title || '',
-      authors: info.authors || [],
-      description: info.description || '',
-      categories: info.categories || [],
-      industryIdentifiers: info.industryIdentifiers || [],
-      thumbnail: info.imageLinks?.thumbnail || '',
-      publishedDate: info.publishedDate || ''
-    };
-    try { await BookSnapshot.create(snapData); } catch (e) {}
-    return res.json({ source: 'google', book: snapData });
+
+    // 1) Prioriza snapshot local (livros manuais ou já cacheados)
+    let snapshot = await BookSnapshot.findOne({ volumeId }).lean();
+
+    // 2) Se não existir, busca na Google Books e cacheia
+    if (!snapshot) {
+      try {
+        const gb = await fetchGoogleBookByVolumeId(volumeId);
+        const info = gb.volumeInfo || {};
+        const snapData = {
+          volumeId,
+          title: info.title || '',
+          authors: info.authors || [],
+          description: info.description || '',
+          categories: info.categories || [],
+          industryIdentifiers: info.industryIdentifiers || [],
+          thumbnail: info.imageLinks?.thumbnail || '',
+          publishedDate: info.publishedDate || ''
+        };
+        try {
+          snapshot = await BookSnapshot.create(snapData);
+        } catch (e) {
+          // Corrida: outro request criou antes — busca de novo
+          snapshot = await BookSnapshot.findOne({ volumeId }).lean();
+        }
+        return res.json({ source: 'google', book: snapshot || snapData });
+      } catch (e) {
+        return res.status(404).json({ mensagem: 'Livro não encontrado.' });
+      }
+    }
+
+    // 3) Snapshot local encontrado — determina se é manual
+    const manual = await ShelfItem.exists({ volumeId, manual: true });
+    return res.json({
+      source: 'db',
+      manual: !!manual,
+      book: snapshot
+    });
   } catch (err) {
-    console.error(err);
+    console.error('Erro em /api/book/:volumeId:', err);
     return res.status(500).json({ mensagem: 'Erro ao buscar livro.' });
   }
 });
@@ -919,6 +944,15 @@ app.get('/api/book/:volumeId/rating', async (req, res) => {
     if (req.user) {
       const r = await Rating.findOne({ userId: req.user._id, bookVolumeId: volumeId });
       minhaNota = r ? r.value : null;
+
+      // Fallback: se não tem Rating mas tem userRating na shelf, usa
+      if (minhaNota == null) {
+        const item = await ShelfItem.findOne(
+          { userId: req.user._id, volumeId },
+          { userRating: 1 }
+        ).lean();
+        if (item && item.userRating != null) minhaNota = item.userRating;
+      }
     }
     return res.json({ media, total, minhaNota });
   } catch (err) {
@@ -935,6 +969,11 @@ app.post('/api/book/:volumeId/rating', async (req, res) => {
 
     if (value === null || value === undefined || value === '') {
       await Rating.deleteOne({ userId: req.user._id, bookVolumeId: volumeId });
+      // Também limpa o userRating da shelf (mantém consistência)
+      await ShelfItem.updateOne(
+        { userId: req.user._id, volumeId },
+        { $set: { userRating: null, updatedAt: new Date() } }
+      );
       return res.json({ mensagem: 'Nota removida.', media: null, total: 0, minhaNota: null });
     }
 
@@ -947,6 +986,12 @@ app.post('/api/book/:volumeId/rating', async (req, res) => {
       { userId: req.user._id, bookVolumeId: volumeId },
       { value: n, updatedAt: new Date() },
       { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // Também salva na shelf se o livro estiver lá (mantém consistência)
+    await ShelfItem.updateOne(
+      { userId: req.user._id, volumeId },
+      { $set: { userRating: n, updatedAt: new Date() } }
     );
 
     const agg = await Rating.aggregate([
@@ -1059,16 +1104,65 @@ app.get('/api/shelf/item/:volumeId', async (req, res) => {
   }
 });
 
+// ================================================================
+// ============ SHELF: ADD (cria OU atualiza) =====================
+// Aceita: volumeId, status, reaction (string), reactions (array),
+//         currentPage, chapter | currentChapter, userRating
+// ================================================================
 app.post('/api/shelf/add', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
 
-    const { volumeId, status } = req.body;
+    const {
+      volumeId,
+      status,
+      reaction,
+      reactions,
+      currentPage,
+      chapter,
+      currentChapter,
+      userRating
+    } = req.body;
+
     if (!volumeId) return res.status(400).json({ mensagem: 'volumeId obrigatório.' });
 
     const STATUS_VALIDOS = ['quero', 'lendo', 'terminei', 'pausei', 'desisti'];
     const statusFinal = status && STATUS_VALIDOS.includes(status) ? status : 'quero';
 
+    // Normaliza reactions: aceita string única (reaction) OU array (reactions)
+    let reactionsFinal = null;
+    if (Array.isArray(reactions)) {
+      reactionsFinal = reactions.map(r => String(r)).filter(Boolean);
+    } else if (typeof reaction === 'string') {
+      reactionsFinal = reaction ? [reaction] : [];
+    } else if (reaction === null) {
+      reactionsFinal = [];
+    }
+
+    // Normaliza capítulo: aceita 'chapter' ou 'currentChapter'
+    const capituloFinal = (chapter != null) ? String(chapter)
+      : (currentChapter != null) ? String(currentChapter)
+      : null;
+
+    // Normaliza página
+    let paginaFinal;
+    if (currentPage === '' || currentPage === undefined) paginaFinal = undefined;
+    else if (currentPage === null) paginaFinal = null;
+    else {
+      const n = Number(currentPage);
+      paginaFinal = isNaN(n) ? undefined : Math.max(0, Math.floor(n));
+    }
+
+    // Normaliza nota
+    let notaFinal;
+    if (userRating === '' || userRating === undefined) notaFinal = undefined;
+    else if (userRating === null) notaFinal = null;
+    else {
+      const n = Math.round(Number(userRating));
+      if (!isNaN(n) && n >= 0 && n <= 10) notaFinal = n;
+    }
+
+    // Garante snapshot do livro
     let snapshot = await BookSnapshot.findOne({ volumeId });
     if (!snapshot) {
       try {
@@ -1091,13 +1185,20 @@ app.post('/api/shelf/add', async (req, res) => {
     }
 
     const exists = await ShelfItem.findOne({ userId: req.user._id, volumeId });
+
     if (exists) {
+      // Atualização parcial: só mexe no que foi enviado
       exists.status = statusFinal;
+      if (reactionsFinal !== null)  exists.reactions = reactionsFinal;
+      if (capituloFinal !== null)   exists.currentChapter = capituloFinal;
+      if (paginaFinal !== undefined) exists.currentPage = paginaFinal;
+      if (notaFinal !== undefined)  exists.userRating = notaFinal;
       exists.updatedAt = new Date();
       await exists.save();
-      return res.json({ mensagem: 'Status atualizado na estante.', item: exists });
+      return res.json({ mensagem: 'Item atualizado.', item: exists });
     }
 
+    // Criação
     const isbnObj = (snapshot?.industryIdentifiers || []).find(i => /ISBN/.test(i.type || '')) || null;
     const isbn = isbnObj ? (isbnObj.identifier || '') : '';
 
@@ -1111,16 +1212,23 @@ app.post('/api/shelf/add', async (req, res) => {
       categories: snapshot?.categories || [],
       description: snapshot?.description || '',
       isbn,
-      status: statusFinal
+      status: statusFinal,
+      reactions: reactionsFinal || [],
+      currentPage: paginaFinal !== undefined ? paginaFinal : null,
+      currentChapter: capituloFinal || '',
+      userRating: notaFinal !== undefined ? notaFinal : null
     });
 
     return res.json({ mensagem: 'Livro adicionado à estante.', item });
   } catch (err) {
-    console.error(err);
+    console.error('Erro em /api/shelf/add:', err);
     return res.status(500).json({ mensagem: 'Erro ao adicionar livro à estante.' });
   }
 });
 
+// ================================================================
+// ============ SHELF: UPDATE (edição completa) ===================
+// ================================================================
 app.post('/api/shelf/update', async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });

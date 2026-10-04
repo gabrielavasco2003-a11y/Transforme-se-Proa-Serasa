@@ -1,5 +1,20 @@
 // book.js — detalhe do livro (via proxy do backend)
-// Não usa mais chave do Google no front.
+// Prioriza dados locais (MongoDB) quando existirem; senão, usa API Google via backend.
+
+const REACTION_LABELS = {
+  amei: '😍 Amei',
+  quero_mais: '⭐ Quero mais',
+  ok: '😐 É ok',
+  chorei: '😭 Chorei',
+  curti: '👍 Curti',
+  fraco: '😕 Fraco',
+  engracado: '😂 Engraçado',
+  muito_ruim: '👎 Muito ruim',
+  favorito: '❤️ Favorito',
+  recomendo: '🔥 Recomendo',
+  confuso: '🤔 Confuso',
+  abandonei: '🗑️ Abandonei'
+};
 
 async function getUser() {
   try {
@@ -24,13 +39,11 @@ async function loadBook() {
   }
 
   try {
-    // 1) Busca o livro pelo backend (proxy + cache no MongoDB)
     const res = await fetch(`/api/book/${encodeURIComponent(volumeId)}`);
     if (!res.ok) throw new Error('Livro não encontrado');
     const data = await res.json();
     const book = data.book || {};
 
-    // 2) Preenche a página
     document.getElementById('book-title').textContent = book.title || 'Sem título';
     document.getElementById('book-authors').textContent =
       (book.authors || []).join(', ') || 'Desconhecido';
@@ -50,19 +63,23 @@ async function loadBook() {
       thumb.style.display = 'none';
     }
 
-    // 3) Estado do usuário
     const user = await getUser();
 
-    // 4) Avaliação (média da comunidade + minha nota)
+    // Avaliação (média + minha nota)
     await loadRating(volumeId, !!user);
 
-    // 5) Estante / status
     if (user) {
-      await setupShelfControls(volumeId, user);
+      // Mostra seções extras (progresso, reação, nota)
+      document.getElementById('user-extras').hidden = false;
       document.getElementById('comment-box').hidden = false;
+
+      // Carrega dados da estante (status, reação, progresso) + liga controles
+      await setupShelfControls(volumeId, user);
+
       setupComments(volumeId, user);
     } else {
-      // Visitante: mostra apenas comentários, sem caixa de envio
+      document.getElementById('user-extras').hidden = true;
+      document.getElementById('comment-box').hidden = true;
       setupComments(volumeId, null);
     }
   } catch (err) {
@@ -73,33 +90,33 @@ async function loadBook() {
 
 /* ========== AVALIAÇÃO ========== */
 async function loadRating(volumeId, isLogged) {
+  const communityEl = document.getElementById('community-rating');
+  const slider = document.getElementById('user-rating');
+  const output = document.getElementById('user-rating-value');
+
   try {
-    const res = await fetch(`/api/book/${encodeURIComponent(volumeId)}/rating`);
+    const res = await fetch(`/api/book/${encodeURIComponent(volumeId)}/rating`, {
+      credentials: 'same-origin'
+    });
     if (!res.ok) throw new Error('Erro ao buscar nota');
     const data = await res.json();
 
-    const communityEl = document.getElementById('community-rating');
     if (data.media != null) {
       communityEl.textContent = `${data.media} / 10 (${data.total} avaliação${data.total === 1 ? '' : 'ões'})`;
     } else {
       communityEl.textContent = 'Sem avaliações ainda';
     }
 
-    const box = document.getElementById('rating-box');
-    const slider = document.getElementById('user-rating');
-    const output = document.getElementById('user-rating-value');
+    if (!isLogged) return;
 
-    if (!isLogged) {
-      box.hidden = true;
-      return;
-    }
-
-    box.hidden = false;
-    const minha = data.minhaNota != null ? data.minhaNota : 0;
+    const minha = data.minhaNota != null ? Number(data.minhaNota) : 0;
     slider.value = minha;
-    output.textContent = minha;
+    output.textContent = data.minhaNota != null ? minha : '—';
 
-    slider.oninput = () => { output.textContent = slider.value; };
+    slider.oninput = () => {
+      output.textContent = slider.value;
+    };
+
     slider.onchange = async () => {
       await saveRating(volumeId, Number(slider.value));
     };
@@ -109,6 +126,7 @@ async function loadRating(volumeId, isLogged) {
     };
   } catch (e) {
     console.warn('Avaliação indisponível:', e);
+    communityEl.textContent = '—';
   }
 }
 
@@ -129,22 +147,31 @@ async function saveRating(volumeId, value) {
     } else {
       communityEl.textContent = 'Sem avaliações ainda';
     }
+
     const slider = document.getElementById('user-rating');
     const output = document.getElementById('user-rating-value');
-    slider.value = data.minhaNota != null ? data.minhaNota : 0;
-    output.textContent = slider.value;
+    if (data.minhaNota != null) {
+      slider.value = data.minhaNota;
+      output.textContent = data.minhaNota;
+    } else {
+      slider.value = 0;
+      output.textContent = '—';
+    }
   } catch (e) {
     console.error(e);
     alert(e.message);
   }
 }
 
-/* ========== ESTANTE / STATUS (chamada única) ========== */
+/* ========== ESTANTE / STATUS / REAÇÃO / PROGRESSO ========== */
 async function setupShelfControls(volumeId, user) {
   const picker = document.getElementById('status-picker');
   const buttons = picker.querySelectorAll('.status-btn');
+  const reactionBtns = document.querySelectorAll('.reaction-btn');
+  const pageInput = document.getElementById('current-page');
+  const chapterInput = document.getElementById('current-chapter');
 
-  // Descobre se o livro já está na estante (e qual status)
+  // Busca o item da estante (se existir)
   let item = null;
   try {
     const res = await fetch(`/api/shelf/item/${encodeURIComponent(volumeId)}`, {
@@ -156,51 +183,96 @@ async function setupShelfControls(volumeId, user) {
     }
   } catch (_) { /* ignora */ }
 
-  const marcarAtivo = (status) => {
-    buttons.forEach(b => b.classList.toggle('active', b.dataset.status === status));
+  const marcarStatus = (status) => {
+    buttons.forEach(b => {
+      const on = b.dataset.status === status;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
   };
-  if (item?.status) marcarAtivo(item.status);
 
-  // Desabilita os botões durante o request (evita duplo clique)
+  const marcarReacao = (reaction) => {
+    reactionBtns.forEach(b => {
+      const on = b.dataset.reaction === reaction;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  };
+
+  // Preenche com o que já existe
+  if (item) {
+    if (item.status) marcarStatus(item.status);
+    if (item.reaction) marcarReacao(item.reaction);
+    if (item.currentPage != null) pageInput.value = item.currentPage;
+    if (item.chapter) chapterInput.value = item.chapter;
+  }
+
   const setDisabled = (disabled) => {
     buttons.forEach(b => { b.disabled = disabled; });
+    reactionBtns.forEach(b => { b.disabled = disabled; });
   };
 
+  // Salva no backend (cria ou atualiza)
+  async function salvarShelf(patch) {
+    setDisabled(true);
+    try {
+      const res = await fetch('/api/shelf/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ volumeId, ...patch })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.mensagem || 'Erro ao salvar');
+      item = data.item || { ...(item || {}), volumeId, ...patch };
+      return item;
+    } finally {
+      setDisabled(false);
+    }
+  }
+
+  // Status
   buttons.forEach(btn => {
     btn.onclick = async () => {
       const status = btn.dataset.status;
-
-      // Se já está nesse status, não faz nada
       if (item?.status === status) return;
-
-      setDisabled(true);
       try {
-        // Uma única chamada: o backend cria OU atualiza
-        const res = await fetch('/api/shelf/add', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({ volumeId, status })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.mensagem || 'Erro ao salvar status');
-
-        item = data.item || { volumeId, status };
-        marcarAtivo(status);
+        await salvarShelf({ status });
+        marcarStatus(status);
         btn.blur();
-      } catch (e) {
-        console.error(e);
-        alert(e.message);
-      } finally {
-        setDisabled(false);
-      }
+      } catch (e) { console.error(e); alert(e.message); }
     };
   });
+
+  // Reação (toggle: se clicar na mesma, remove)
+  reactionBtns.forEach(btn => {
+    btn.onclick = async () => {
+      const reaction = btn.dataset.reaction;
+      const nova = item?.reaction === reaction ? null : reaction;
+      try {
+        await salvarShelf({ reaction: nova });
+        marcarReacao(nova);
+        btn.blur();
+      } catch (e) { console.error(e); alert(e.message); }
+    };
+  });
+
+  // Progresso — salva ao sair do campo (blur) para evitar request a cada tecla
+  const salvarProgresso = async () => {
+    const currentPage = pageInput.value === '' ? null : Number(pageInput.value);
+    const chapter = chapterInput.value.trim() || null;
+    try {
+      await salvarShelf({ currentPage, chapter });
+    } catch (e) { console.error(e); alert(e.message); }
+  };
+  pageInput.onblur = salvarProgresso;
+  chapterInput.onblur = salvarProgresso;
 }
 
 /* ========== COMENTÁRIOS ========== */
 async function setupComments(volumeId, user) {
   const list = document.getElementById('comments-list');
+  if (!list) return;
 
   async function loadComments() {
     try {

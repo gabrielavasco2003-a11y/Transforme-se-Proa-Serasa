@@ -6,137 +6,20 @@
   <title>Detalhe do Livro - Spoiler Esperado</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="../css/book.css">
-
-  <!-- Estilos mínimos apenas para o seletor de status, a nota do usuário
-       e os comentários. Não sobrescrevem as classes existentes do book.css. -->
-  <style>
-    .status-picker {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 14px 0;
-    }
-    .status-picker .status-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      border: 1px solid #c9a86a;
-      background: #fff8e7;
-      color: #5a4a2a;
-      border-radius: 999px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-    }
-    .status-picker .status-btn:hover:not(:disabled) {
-      background: #f5ecd2;
-    }
-    .status-picker .status-btn.active {
-      background: #c9a86a;
-      color: #fff;
-      border-color: #a8894f;
-    }
-    .status-picker .status-btn:disabled {
-      opacity: 0.6;
-      cursor: wait;
-    }
-    .status-picker .status-btn:focus-visible {
-      outline: 2px solid #a8894f;
-      outline-offset: 2px;
-    }
-
-    .rating-box {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 10px 0 4px;
-      flex-wrap: wrap;
-    }
-    .rating-box input[type="range"] {
-      flex: 1;
-      min-width: 120px;
-    }
-    .rating-box output {
-      min-width: 2ch;
-      font-weight: 700;
-      text-align: center;
-    }
-    .rating-box #clear-rating {
-      border: 1px solid #c9a86a;
-      background: #fff8e7;
-      color: #5a4a2a;
-      border-radius: 6px;
-      padding: 4px 10px;
-      cursor: pointer;
-    }
-    .rating-box #clear-rating:hover {
-      background: #f5ecd2;
-    }
-
-    .community-rating {
-      font-size: 0.95rem;
-      color: #6b6b6b;
-      margin-top: 6px;
-    }
-
-    .comments-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .comments-list li {
-      list-style: none;
-      margin-bottom: 14px;
-      padding: 10px 12px;
-      border: 1px solid #e6d9b8;
-      border-radius: 10px;
-      background: #fffdf6;
-    }
-    .comment-meta {
-      font-size: 0.85rem;
-      color: #888;
-      margin-bottom: 4px;
-    }
-    .comment-actions {
-      margin-top: 6px;
-    }
-    .comment-actions button {
-      font-size: 0.8rem;
-      padding: 4px 10px;
-      border: 1px solid #c9a86a;
-      background: #fff8e7;
-      color: #5a4a2a;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .comment-actions button:hover {
-      background: #f5ecd2;
-    }
-  </style>
 </head>
 <body>
 <header role="banner">
-    <!-- Logo -->
-<a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
-    <img src="/img/logo/Logotipo_Logo_ModoClaro.png"  alt="Logo Spoiler Esperado" class="logo-claro">
-    <img src="/img/logo/Logotipo_Logo_ModoEscuro.png" alt="Logo Spoiler Esperado" class="logo-escuro">
-</a>
-    <!-- Busca centralizada -->
+    <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
+        <img src="/img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado" class="logo-claro">
+        <img src="/img/logo/Logotipo_Logo_ModoEscuro.png" alt="Logo Spoiler Esperado" class="logo-escuro">
+    </a>
+
     <form id="search-form" action="/busca.html" method="get" role="search">
         <label for="search-input" class="sr-only">Buscar livros</label>
-        <input
-            type="search"
-            name="q"
-            id="search-input"
-            placeholder="Insira palavras-chave"
-            aria-label="Buscar livros"
-        >
+        <input type="search" name="q" id="search-input" placeholder="Insira palavras-chave" aria-label="Buscar livros">
         <button type="submit" id="search-btn">Pesquisar</button>
     </form>
 
-    <!-- Navegação para visitantes (não logados) -->
     <nav id="nav-visitante" aria-label="Navegação de visitante">
         <ul>
             <li><a href="/cadastro.html">Cadastro</a></li>
@@ -144,64 +27,29 @@
         </ul>
     </nav>
 
-    <!-- Menu do usuário logado -->
     <nav id="user-menu" class="hidden" hidden aria-label="Menu do usuário">
-        <!-- Avatar: SÓ ABRE -->
-        <button
-            id="avatar"
-            type="button"
-            aria-haspopup="true"
-            aria-expanded="false"
-            aria-controls="dropdown"
-            aria-label="Abrir menu do usuário"
-            onclick="
-                event.preventDefault();
-                var d = document.getElementById('dropdown');
-                var a = document.getElementById('avatar');
-                if (!d) return;
-                d.classList.remove('hidden');
-                d.hidden = false;
-                d.style.display = 'block';
-                if (a) a.setAttribute('aria-expanded', 'true');
-            "
-        >
+        <button id="avatar" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="dropdown" aria-label="Abrir menu do usuário"
+            onclick="event.preventDefault();var d=document.getElementById('dropdown');var a=document.getElementById('avatar');if(!d)return;d.classList.remove('hidden');d.hidden=false;d.style.display='block';if(a)a.setAttribute('aria-expanded','true');">
             <span id="avatar-initial" aria-hidden="true">?</span>
         </button>
 
-        <!-- Dropdown -->
         <ul id="dropdown" class="hidden" role="menu" hidden>
-            <!-- Botão X: SÓ FECHA -->
             <li role="none" class="dropdown-close-item">
-                <button
-                    id="fechar-dropdown"
-                    type="button"
-                    class="dropdown-close"
-                    aria-label="Fechar menu"
-                    onclick="
-                        event.preventDefault();
-                        event.stopPropagation();
-                        var d = document.getElementById('dropdown');
-                        var a = document.getElementById('avatar');
-                        if (d) {
-                            d.classList.add('hidden');
-                            d.hidden = true;
-                            d.style.display = 'none';
-                        }
-                        if (a) a.setAttribute('aria-expanded', 'false');
-                    "
-                >✕</button>
+                <button id="fechar-dropdown" type="button" class="dropdown-close" aria-label="Fechar menu"
+                    onclick="event.preventDefault();event.stopPropagation();var d=document.getElementById('dropdown');var a=document.getElementById('avatar');if(d){d.classList.add('hidden');d.hidden=true;d.style.display='none';}if(a)a.setAttribute('aria-expanded','false');">✕</button>
             </li>
-<li role="none"><a href="/adicionar-livro.html" role="menuitem">➕ Adicionar Livro</a></li>
+            <li role="none"><a href="/adicionar-livro.html" role="menuitem">➕ Adicionar Livro</a></li>
             <li role="none"><a href="/shelf.html" role="menuitem">Minha Estante</a></li>
             <li role="none"><a href="/perfil.html" role="menuitem">Meu Perfil</a></li>
             <li role="none"><a href="/editar-perfil.html" role="menuitem">Editar Perfil</a></li>
             <li role="none"><a href="/conquistas.html" role="menuitem">Minhas Conquistas</a></li>
-              <li role="none"><a href="/configuracoes.html" role="menuitem">Configurações</a></li>
+            <li role="none"><a href="/configuracoes.html" role="menuitem">Configurações</a></li>
             <li role="none"><a href="#" id="logout" role="menuitem">Logout</a></li>
         </ul>
     </nav>
 </header>
-  <main id="book-detail">
+
+<main id="book-detail">
     <div class="book-header">
       <img id="book-thumbnail" alt="Capa do livro">
       <div class="book-meta">
@@ -210,28 +58,18 @@
         <p><strong>Ano:</strong> <span id="book-year"></span></p>
         <p><strong>Gênero:</strong> <span id="book-categories"></span></p>
 
-        <!-- Média da comunidade (calculada pelo backend) -->
         <p class="community-rating">
           <strong>Nota da comunidade:</strong>
           <span id="community-rating" aria-live="polite">—</span>
         </p>
 
-        <!-- Seletor de status — OBRIGATÓRIO ao adicionar o livro -->
+        <!-- Status principal da estante -->
         <div class="status-picker" id="status-picker" role="group" aria-label="Status de leitura">
-          <button class="status-btn" data-status="quero"    type="button">＋ Quero Ver</button>
-          <button class="status-btn" data-status="lendo"    type="button">▶ Lendo</button>
-          <button class="status-btn" data-status="terminei" type="button">✓ Terminei</button>
-          <button class="status-btn" data-status="pausei"   type="button">❚❚ Pausei</button>
-          <button class="status-btn" data-status="desisti"  type="button">✕ Desisti</button>
-        </div>
-
-        <!-- Nota do usuário (0–10) — só aparece quando logado -->
-        <div class="rating-box" id="rating-box" hidden>
-          <label for="user-rating"><strong>Sua nota:</strong></label>
-          <input type="range" id="user-rating" min="0" max="10" step="1" value="0"
-                 aria-label="Sua nota de 0 a 10">
-          <output id="user-rating-value" for="user-rating">0</output>
-          <button id="clear-rating" type="button" title="Remover nota">✕</button>
+          <button class="status-btn" data-status="quero"    type="button" aria-pressed="false">＋ Quero Ver</button>
+          <button class="status-btn" data-status="lendo"    type="button" aria-pressed="false">▶ Lendo</button>
+          <button class="status-btn" data-status="terminei" type="button" aria-pressed="false">✓ Terminei</button>
+          <button class="status-btn" data-status="pausei"   type="button" aria-pressed="false">❚❚ Pausei</button>
+          <button class="status-btn" data-status="desisti"  type="button" aria-pressed="false">✕ Desisti</button>
         </div>
       </div>
     </div>
@@ -241,6 +79,54 @@
       <p id="book-description"></p>
     </div>
 
+    <!-- ===== ÁREA DO USUÁRIO LOGADO (progresso, reação, nota) ===== -->
+    <section id="user-extras" class="user-extras" hidden>
+
+      <!-- PROGRESSO -->
+      <div class="card-section">
+        <h2 class="section-title">Progresso</h2>
+        <div class="form-row">
+          <label for="current-page"><strong>Página atual</strong></label>
+          <input type="number" id="current-page" min="0" step="1" placeholder="Ex: 120">
+        </div>
+        <div class="form-row">
+          <label for="current-chapter"><strong>Capítulo</strong></label>
+          <input type="text" id="current-chapter" maxlength="120" placeholder="Ex: Cap. 7 - O Espelho">
+        </div>
+      </div>
+
+      <!-- SUA REAÇÃO -->
+      <div class="card-section">
+        <h2 class="section-title">Sua Reação <small>(opcional)</small></h2>
+        <div class="reactions-grid" id="reactions-grid" role="group" aria-label="Sua reação ao livro">
+          <button type="button" class="reaction-btn" data-reaction="amei"       aria-pressed="false">😍 Amei</button>
+          <button type="button" class="reaction-btn" data-reaction="quero_mais" aria-pressed="false">⭐ Quero mais</button>
+          <button type="button" class="reaction-btn" data-reaction="ok"         aria-pressed="false">😐 É ok</button>
+          <button type="button" class="reaction-btn" data-reaction="chorei"     aria-pressed="false">😭 Chorei</button>
+          <button type="button" class="reaction-btn" data-reaction="curti"      aria-pressed="false">👍 Curti</button>
+          <button type="button" class="reaction-btn" data-reaction="fraco"      aria-pressed="false">😕 Fraco</button>
+          <button type="button" class="reaction-btn" data-reaction="engracado"  aria-pressed="false">😂 Engraçado</button>
+          <button type="button" class="reaction-btn" data-reaction="muito_ruim" aria-pressed="false">👎 Muito ruim</button>
+          <button type="button" class="reaction-btn" data-reaction="favorito"   aria-pressed="false">❤️ Favorito</button>
+          <button type="button" class="reaction-btn" data-reaction="recomendo"  aria-pressed="false">🔥 Recomendo</button>
+          <button type="button" class="reaction-btn" data-reaction="confuso"    aria-pressed="false">🤔 Confuso</button>
+          <button type="button" class="reaction-btn" data-reaction="abandonei"  aria-pressed="false">🗑️ Abandonei</button>
+        </div>
+      </div>
+
+      <!-- SUA NOTA -->
+      <div class="card-section">
+        <h2 class="section-title">Sua Nota <small>(0 a 10)</small>
+          <button id="clear-rating" type="button" class="link-btn">Remover</button>
+        </h2>
+        <div class="rating-row">
+          <input type="range" id="user-rating" min="0" max="10" step="1" value="0" aria-label="Sua nota de 0 a 10">
+          <output id="user-rating-value" for="user-rating" class="rating-value">0</output>
+        </div>
+      </div>
+
+    </section>
+
     <div class="comments-section">
       <h2>Comentários</h2>
       <div id="comment-box" hidden>
@@ -249,21 +135,23 @@
       </div>
       <ul id="comments-list" class="comments-list" aria-live="polite"></ul>
     </div>
-  </main>
+</main>
+
 <footer>
     <div id="logo-footer">
         <img src="/img/logo/Logo.svg" alt="Logo Spoiler Esperado">
     </div>
     <ul>
-<li><a href="/quem-somos.html">Quem somos</a></li>
-<li><a href="/termos-servicos.html">Termos e serviços</a></li>
-<li><a href="/politica-privacidade.html">Política de privacidade</a></li>
-<li><a href="/fale-conosco.html">Fale conosco</a></li>
+        <li><a href="/quem-somos.html">Quem somos</a></li>
+        <li><a href="/termos-servicos.html">Termos e serviços</a></li>
+        <li><a href="/politica-privacidade.html">Política de privacidade</a></li>
+        <li><a href="/fale-conosco.html">Fale conosco</a></li>
     </ul>
 </footer>
+
 <script src="/js/theme.js"></script>
 <script src="/js/offline.js"></script>
 <script src="/js/script.js"></script>
-  <script src="../js/book.js"></script>
+<script src="../js/book.js"></script>
 </body>
 </html>
