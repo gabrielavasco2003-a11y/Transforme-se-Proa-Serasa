@@ -340,3 +340,199 @@ footer a {
     outline: 2px solid #B89764;
     outline-offset: -2px;
 }
+/* ============================================================
+   TEMA ESCURO — paleta oficial do projeto
+   Aplicado quando <html class="dark">
+   ============================================================ */
+
+/* Fundo principal + texto */
+html.dark body {
+    background-color: #19203C;
+    color: #E4D0B1;
+}
+
+/* Header */
+html.dark header {
+    background-color: #162745;
+    border-bottom: 1px solid #2A587D;
+}
+
+html.dark nav a {
+    color: #E4D0B1;
+}
+
+html.dark #search-form input {
+    background-color: #19203C;
+    color: #E4D0B1;
+    border-color: #2A587D;
+}
+
+html.dark #search-form input::placeholder {
+    color: #6b7a99;
+}
+
+html.dark #search-form button {
+    background-color: #C09E68;
+    color: #162745;
+}
+
+html.dark #search-form button:hover {
+    background-color: #B89764;
+}
+
+/* Avatar do header */
+html.dark #avatar {
+    background-color: #2A587D;
+    color: #E4D0B1;
+    border: 2px solid #C09E68;
+}
+
+/* Dropdown do usuário */
+html.dark #dropdown {
+    background-color: #162745;
+    border-color: #2A587D;
+}
+
+html.dark #dropdown li:hover {
+    background-color: #2A587D;
+}
+
+html.dark #dropdown a {
+    color: #E4D0B1;
+}
+
+html.dark .dropdown-close {
+    color: #C09E68;
+}
+
+html.dark .dropdown-close:hover {
+    background-color: #2A587D;
+    color: #E4D0B1;
+}
+
+html.dark .dropdown-close-item {
+    border-bottom-color: #2A587D;
+}
+
+/* Banner */
+html.dark #banner {
+    background-color: #162745;
+}
+
+html.dark #banner p {
+    color: #E4D0B1;
+}
+
+/* Seções de livros */
+html.dark .livros-section h2 {
+    color: #C09E68;
+    border-bottom-color: #C09E68;
+}
+
+html.dark .livros article {
+    background-color: #162745;
+    border-color: #2A587D;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+html.dark .titulo {
+    color: #C09E68;
+}
+
+html.dark .avaliacoes {
+    color: #a8b3c8;
+}
+
+/* Setas de rolagem */
+html.dark .arrow {
+    background-color: #C09E68;
+    color: #162745;
+}
+
+html.dark .arrow:hover {
+    background-color: #B89764;
+}
+
+/* Footer */
+html.dark footer {
+    background-color: #162745;
+    border-top: 1px solid #2A587D;
+}
+
+html.dark footer a {
+    color: #E4D0B1;
+}
+
+/* Formulários — inputs, selects, textareas */
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+    background-color: #19203C;
+    color: #E4D0B1;
+    border-color: #2A587D;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+    border-color: #C09E68;
+    box-shadow: 0 0 0 3px rgba(192, 158, 104, 0.2);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #6b7a99;
+}
+
+/* Botões */
+html.dark .btn-primary {
+    background-color: #C09E68;
+    color: #162745;
+}
+
+html.dark .btn-primary:hover {
+    background-color: #B89764;
+}
+
+html.dark .btn-secondary {
+    color: #E4D0B1;
+    border-color: #2A587D;
+    background-color: transparent;
+}
+
+html.dark .btn-secondary:hover {
+    background-color: #2A587D;
+    border-color: #C09E68;
+    color: #E4D0B1;
+}
+
+/* Estrelas de avaliação */
+html.dark .star-btn {
+    color: #3a4560;
+}
+
+html.dark .star-btn[aria-pressed="true"] {
+    color: #C09E68;
+}
+
+html.dark .card-rating .empty-star {
+    color: #3a4560;
+}
+
+/* Tags (gêneros dos livros) */
+html.dark .tag {
+    background-color: #2A587D;
+    color: #E4D0B1;
+}
+
+/* Divisores */
+html.dark hr {
+    border-color: #2A587D;
+}
+
+/* ============================================================
+   TAMANHO DA FONTE
+   ============================================================ */
+html.font-small  { font-size: 16px; }
+html.font-medium { font-size: 18px; }
+html.font-large  { font-size: 20px; }
