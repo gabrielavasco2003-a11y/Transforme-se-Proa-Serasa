@@ -1,5 +1,6 @@
 // backend/models/User.js
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
   // --- Dados básicos ---
@@ -10,7 +11,7 @@ const userSchema = new mongoose.Schema({
   nascimento: { type: Date },
 
   // --- Senha (só existe se cadastrou por formulário) ---
-  senhaHash: { type: String, select: false },
+  senha: { type: String, select: false },
 
   // --- Dica de senha ---
   perguntaSenha: { type: String, trim: true, default: '' },
@@ -31,7 +32,7 @@ const userSchema = new mongoose.Schema({
     dateFormat: { type: String, default: 'DD/MM/YYYY' }
   },
 
-  // --- Estante do usuário (legado — migrando pra ShelfItem) ---
+  // --- Estante do usuário (legado) ---
   livros: [{
     volumeId:  String,
     isbn:      String,
@@ -47,14 +48,34 @@ const userSchema = new mongoose.Schema({
   regras:    { type: Boolean, default: false },
   marketing: { type: Boolean, default: false },
 
-  // --- Recuperação de senha (token longo — pra usar no futuro) ---
+  // --- Recuperação de senha (token longo) ---
   resetToken:       { type: String, default: null },
   resetTokenExpira: { type: Date,   default: null }
 
 }, { timestamps: true });
 
-// ⚠️ HOOK pre('save') e método compararSenha ficam
-//    para a Etapa 4 (quando todas as rotas forem ajustadas).
-//    Por enquanto, NÃO adicionar aqui — senão quebra o login atual.
+// =========================================================
+// HOOK: faz hash da senha antes de salvar (se foi alterada)
+// =========================================================
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('senha')) return next();
+  if (!this.senha) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.senha = await bcrypt.hash(this.senha, salt);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =========================================================
+// MÉTODO: comparar senha digitada com a do banco
+// =========================================================
+userSchema.methods.compararSenha = async function (senhaDigitada) {
+  if (!this.senha) return false;
+  return bcrypt.compare(senhaDigitada, this.senha);
+};
 
 module.exports = mongoose.model('User', userSchema);

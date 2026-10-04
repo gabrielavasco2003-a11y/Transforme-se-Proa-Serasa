@@ -383,7 +383,7 @@ app.post('/api/recuperar/nova-senha', async (req, res) => {
     if (reg.expiresAt < new Date()) return res.status(400).json({ mensagem: 'Código expirado.' });
     const usuario = await User.findOne({ email });
     if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
-    usuario.senhaHash = novaSenha;
+    usuario.senha = novaSenha; // ← hook faz hash
     await usuario.save();
     reg.usado = true;
     await reg.save();
@@ -465,40 +465,80 @@ async function fetchGoogleBookByVolumeId(volumeId) {
   if (!resp.ok) throw new Error('Erro ao consultar Google Books');
   return resp.json();
 }
-
 // ---------- API: CADASTRO ----------
 app.post('/api/cadastro', async (req, res) => {
   try {
-    const { nome, usuario, email, senhaHash, senha, telefone, nascimento } = req.body;
-    if (!email) return res.status(400).json({ mensagem: 'E-mail obrigatório.' });
-    const existente = await User.findOne({ email });
-    if (existente) return res.status(400).json({ mensagem: 'E-mail já cadastrado.' });
+    const {
+      nome, usuario, email, senha, telefone, nascimento,
+      perguntaSenha, termos, regras, marketing
+    } = req.body;
+
+    if (!nome || !usuario || !email || !senha) {
+      return res.status(400).json({ mensagem: 'Nome, usuário, e-mail e senha são obrigatórios.' });
+    }
+    if (senha.length < 6) {
+      return res.status(400).json({ mensagem: 'A senha deve ter ao menos 6 caracteres.' });
+    }
+    if (!termos || !regras) {
+      return res.status(400).json({ mensagem: 'Você precisa aceitar os Termos e as Regras da comunidade.' });
+    }
+
+    const existente = await User.findOne({ $or: [{ email }, { usuario }] });
+    if (existente) {
+      return res.status(400).json({ mensagem: 'E-mail ou usuário já cadastrado.' });
+    }
+
     const novo = new User({
-      nome, usuario, email,
-      senhaHash: senhaHash || senha,
+      nome,
+      usuario,
+      email,
+      senha, // ← hook pre('save') faz hash
       telefone,
-      nascimento: nascimento ? new Date(nascimento) : undefined
+      nascimento: nascimento ? new Date(nascimento) : undefined,
+      perguntaSenha: perguntaSenha || '',
+      termos:    !!termos,
+      regras:    !!regras,
+      marketing: !!marketing
     });
+
     await novo.save();
+
     req.login(novo, (err) => {
-      if (err) return res.json({ mensagem: 'Usuário cadastrado!', usuario: sanitize(novo) });
-      req.session.save(() =>
-        res.json({ mensagem: 'Usuário cadastrado com sucesso!', usuario: sanitize(novo) })
-      );
+      if (err) {
+        return res.status(500).json({ mensagem: 'Erro ao iniciar sessão.' });
+      }
+      req.session.save(() => {
+        res.status(201).json({
+          mensagem: 'Usuário cadastrado com sucesso!',
+          usuario: sanitize(novo)
+        });
+      });
     });
   } catch (err) {
-    console.error(err);
+    console.error('Erro em /api/cadastro:', err);
     res.status(500).json({ mensagem: 'Erro ao cadastrar usuário.' });
   }
 });
-
 // ---------- API: LOGIN ----------
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
+
+  if (!email || !senha) {
+    return res.status(400).json({ mensagem: 'E-mail e senha são obrigatórios.' });
+  }
+
   try {
-    const usuario = await User.findOne({ email });
-    if (!usuario)  return res.status(400).json({ mensagem: 'Usuário não encontrado!' });
-    if (usuario.senhaHash !== senha) return res.status(400).json({ mensagem: 'Senha incorreta!' });
+    // select('+senha') porque o campo tem select:false no model
+    const usuario = await User.findOne({ email }).select('+senha');
+    if (!usuario) {
+      return res.status(400).json({ mensagem: 'Usuário não encontrado!' });
+    }
+
+    const ok = await usuario.compararSenha(senha);
+    if (!ok) {
+      return res.status(400).json({ mensagem: 'Senha incorreta!' });
+    }
+
     req.login(usuario, (err) => {
       if (err) return res.status(500).json({ mensagem: 'Erro ao iniciar sessão.' });
       req.session.save(() =>
@@ -506,10 +546,10 @@ app.post('/api/login', async (req, res) => {
       );
     });
   } catch (err) {
+    console.error('Erro em /api/login:', err);
     res.status(500).json({ mensagem: 'Erro ao realizar login.' });
   }
 });
-
 // ---------- API: ME ----------
 app.get('/api/me', (req, res) => {
   if (req.user) return res.json(sanitize(req.user));
@@ -573,6 +613,7 @@ app.post('/api/perfil/avatar', async (req, res) => {
 });
 
 // ================================================================
+// ================================================================
 // ============ NOVO: ATUALIZAR DADOS DO PERFIL ===================
 // ================================================================
 app.post('/api/perfil/atualizar', async (req, res) => {
@@ -586,11 +627,12 @@ app.post('/api/perfil/atualizar', async (req, res) => {
 
     if (nome)     u.nome = String(nome).trim();
     if (username) u.usuario = String(username).trim();
+
     if (senha) {
       if (String(senha).length < 6) {
         return res.status(400).json({ mensagem: 'Senha deve ter ao menos 6 caracteres.' });
       }
-      u.senhaHash = String(senha);
+      u.senha = String(senha); // ← hook faz hash
     }
 
     await u.save();
@@ -651,14 +693,28 @@ passport.use(new GoogleStrategy({
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     const email = profile.emails?.[0]?.value;
+    if (!email) return done(new Error('Google não retornou e-mail.'), null);
+
     let usuario = await User.findOne({ $or: [{ googleId: profile.id }, { email }] });
+
     if (!usuario) {
-      usuario = new User({ nome: profile.displayName, email, googleId: profile.id, livros: [] });
+      // Usuário novo pelo Google — precisa completar perfil
+      const baseUsuario = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const sufixo = Math.random().toString(36).slice(2, 6);
+      usuario = new User({
+        nome: profile.displayName || baseUsuario,
+        email,
+        googleId: profile.id,
+        usuario: `${baseUsuario}_${sufixo}`,
+        precisaCompletarPerfil: true
+      });
       await usuario.save();
     } else if (!usuario.googleId) {
+      // Usuário já existia (email cadastrado antes) — vincula o googleId
       usuario.googleId = profile.id;
       await usuario.save();
     }
+
     return done(null, usuario);
   } catch (err) {
     return done(err, null);
@@ -684,32 +740,43 @@ app.get('/api/google/callback',
         return res.redirect('/login.html?erro=session');
       }
       const u = req.user;
-      if (!u.telefone || !u.nascimento || !u.senhaHash) {
+
+      // Usuário novo pelo Google vai pra completar.html
+      if (u.precisaCompletarPerfil) {
         return res.redirect('/completar.html');
       }
       return res.redirect('/perfil');
     });
   }
 );
-
 // ---------- API: COMPLETAR CADASTRO ----------
 app.post('/api/completar', async (req, res) => {
-  const { telefone, nascimento, senhaHash, senha } = req.body;
+  const { telefone, nascimento, senha } = req.body;
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado!' });
+
     const usuario = await User.findById(req.user._id);
     if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado!' });
-    if (telefone)           usuario.telefone = telefone;
-    if (nascimento)         usuario.nascimento = new Date(nascimento);
-    if (senhaHash || senha) usuario.senhaHash = senhaHash || senha;
+
+    if (telefone)   usuario.telefone = telefone;
+    if (nascimento) usuario.nascimento = new Date(nascimento);
+
+    if (senha) {
+      if (senha.length < 6) {
+        return res.status(400).json({ mensagem: 'A senha deve ter ao menos 6 caracteres.' });
+      }
+      usuario.senha = senha; // ← hook faz hash
+    }
+
+    usuario.precisaCompletarPerfil = false;
     await usuario.save();
+
     res.json({ mensagem: 'Cadastro completado com sucesso!', usuario: sanitize(usuario) });
   } catch (err) {
-    console.error(err);
+    console.error('Erro em /api/completar:', err);
     res.status(500).json({ mensagem: 'Erro ao completar cadastro.' });
   }
 });
-
 // ---------- API: CATEGORIES ----------
 app.get('/api/categories', (req, res) => {
   const candidates = [
