@@ -57,17 +57,12 @@ const userSchema = new mongoose.Schema({
 // =========================================================
 // HOOK: faz hash da senha antes de salvar (se foi alterada)
 // =========================================================
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('senha')) return next();
-  if (!this.senha) return next();
+userSchema.pre('save', async function () {
+  if (!this.isModified('senha')) return;
+  if (!this.senha) return;
 
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.senha = await bcrypt.hash(this.senha, salt);
-    next();
-  } catch (err) {
-    next(err);
-  }
+  const salt = await bcrypt.genSalt(10);
+  this.senha = await bcrypt.hash(this.senha, salt);
 });
 
 // =========================================================
@@ -76,6 +71,17 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.compararSenha = async function (senhaDigitada) {
   if (!this.senha) return false;
   return bcrypt.compare(senhaDigitada, this.senha);
+};
+
+// =========================================================
+// MÉTODO: gerar token de recuperação de senha
+// =========================================================
+userSchema.methods.gerarResetToken = function () {
+  const crypto = require('crypto');
+  const token = crypto.randomBytes(32).toString('hex'); // 64 caracteres
+  this.resetToken = token;
+  this.resetTokenExpira = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+  return token;
 };
 
 module.exports = mongoose.model('User', userSchema);

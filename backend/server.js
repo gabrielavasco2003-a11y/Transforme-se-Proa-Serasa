@@ -8,6 +8,15 @@ const { MongoStore } = require('connect-mongo');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('./models/User');
+const sanitize = (user) => {
+  if (!user) return null;
+  const u = user.toObject ? user.toObject() : { ...user };
+  delete u.senha;
+  delete u.senhaHash;
+  delete u.resetToken;
+  delete u.resetTokenExpira;
+  return u;
+};
 const path = require('path');
 const fs = require('fs');
 
@@ -242,16 +251,6 @@ const RatingSchema = new mongoose.Schema({
 RatingSchema.index({ userId: 1, bookVolumeId: 1 }, { unique: true });
 const Rating = mongoose.model('Rating', RatingSchema);
 
-// ---------- MODELO: RECOVERY CODE ----------
-const RecoveryCodeSchema = new mongoose.Schema({
-  email:    { type: String, index: true },
-  codigo:   { type: String, required: true },
-  usado:    { type: Boolean, default: false },
-  expiresAt:{ type: Date, expires: 0 }
-}, { timestamps: true });
-
-const RecoveryCode = mongoose.model('RecoveryCode', RecoveryCodeSchema);
-
 // ---------- MODELO: PHONE VERIFICATION ----------
 const PhoneVerificationSchema = new mongoose.Schema({
   userId:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
@@ -273,6 +272,31 @@ const EMAIL_FROM_NAME  = process.env.EMAIL_FROM_NAME;
 
 function gerarCodigo5() {
   return String(Math.floor(10000 + Math.random() * 90000));
+}
+// ================================================================
+// HELPER: enviar e-mail genérico via Brevo
+// ================================================================
+async function enviarEmail({ para, nome, assunto, html }) {
+  const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': BREVO_API_KEY,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: { name: EMAIL_FROM_NAME, email: EMAIL_FROM },
+      to: [{ email: para, name: nome || para }],
+      subject: assunto,
+      htmlContent: html
+    })
+  });
+
+  if (!resp.ok) {
+    const erro = await resp.text();
+    console.error('Brevo erro:', resp.status, erro);
+    throw new Error('Falha ao enviar e-mail');
+  }
 }
 
 async function enviarEmailCodigo(destino, codigo) {
@@ -337,65 +361,136 @@ function normalizarTelefone(input) {
   if (digits.startsWith('55')) return '+' + digits;
   return '+55' + digits;
 }
+// ================================================================
+// HELPER: e-mail de boas-vindas
+// ================================================================
+async function enviarEmailBoasVindas(usuario) {
+  try {
+    const link = BASE_URL || 'https://spoiler-esperado.onrender.com';
 
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px;border:1px solid #eee;border-radius:12px">
+        <h2 style="margin:0 0 16px">Olá, ${usuario.nome || ''}!</h2>
+        <p>Seja muito bem-vindo(a) ao <strong>Spoiller Esperado</strong>! Estamos felizes em ter você conosco.</p>
+        <p>Para começar a aproveitar todos os recursos, acesse:</p>
+        <p style="text-align:center;margin:28px 0">
+          <a href="${link}"
+             style="display:inline-block;background:#1a2b4a;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold">
+            Acessar o Spoiller Esperado
+          </a>
+        </p>
+        <p>Caso tenha qualquer dúvida ou dificuldade, nossa equipe de suporte está à disposição para ajudar.</p>
+        <p>Obrigado por escolher o Spoiller Esperado!</p>
+        <p style="margin-top:24px">Atenciosamente,<br><strong>Equipe Spoiller Esperado</strong></p>
+      </div>
+    `;
+
+    await enviarEmail({
+      para: usuario.email,
+      nome: usuario.nome,
+      assunto: 'Bem-vindo(a) ao Spoiller Esperado!',
+      html
+    });
+  } catch (err) {
+    console.error('Erro ao enviar e-mail de boas-vindas:', err.message);
+    // Não lança erro — se o e-mail falhar, o cadastro não pode quebrar
+  }
+}
 // ================================================================
-// ============ ROTAS: RECUPERAÇÃO DE SENHA =======================
+// ============ ROTAS: RECUPERAÇÃO DE SENHA (link com token) ======
 // ================================================================
-app.post('/api/recuperar/enviar-codigo', async (req, res) => {
+
+// PASSO 1: usuário digita o e-mail → geramos token e enviamos link
+app.post('/api/recuperar/solicitar', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ mensagem: 'E-mail obrigatório.' });
-    const usuario = await User.findOne({ email });
-    if (!usuario) return res.status(404).json({ mensagem: 'E-mail não cadastrado.' });
-    const codigo = gerarCodigo5();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    await RecoveryCode.deleteMany({ email });
-    await RecoveryCode.create({ email, codigo, expiresAt });
-    await enviarEmailCodigo(email, codigo);
-    return res.json({ mensagem: 'Código enviado para o e-mail.' });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ mensagem: 'Erro ao enviar código.' });
-  }
-});
 
-app.post('/api/recuperar/validar-codigo', async (req, res) => {
-  try {
-    const { email, codigo } = req.body;
-    if (!email || !codigo) return res.status(400).json({ mensagem: 'Dados incompletos.' });
-    const reg = await RecoveryCode.findOne({ email, codigo, usado: false });
-    if (!reg) return res.status(400).json({ mensagem: 'Código inválido.' });
-    if (reg.expiresAt < new Date()) return res.status(400).json({ mensagem: 'Código expirado.' });
-    return res.json({ mensagem: 'Código válido.' });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ mensagem: 'Erro ao validar código.' });
-  }
-});
-
-app.post('/api/recuperar/nova-senha', async (req, res) => {
-  try {
-    const { email, codigo, novaSenha } = req.body;
-    if (!email || !codigo || !novaSenha) return res.status(400).json({ mensagem: 'Dados incompletos.' });
-    if (novaSenha.length < 6) return res.status(400).json({ mensagem: 'A senha deve ter ao menos 6 caracteres.' });
-    const reg = await RecoveryCode.findOne({ email, codigo, usado: false });
-    if (!reg) return res.status(400).json({ mensagem: 'Código inválido.' });
-    if (reg.expiresAt < new Date()) return res.status(400).json({ mensagem: 'Código expirado.' });
     const usuario = await User.findOne({ email });
-    if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
-    usuario.senha = novaSenha; // ← hook faz hash
+
+    // ⚠️ Por segurança, respondemos a MESMA mensagem
+    //    exista ou não o e-mail (evita "user enumeration")
+    const respostaPadrao = {
+      mensagem: 'Se este e-mail estiver cadastrado, enviaremos um link de recuperação.'
+    };
+
+    if (!usuario) {
+      return res.json(respostaPadrao);
+    }
+
+    // Se o usuário só tem Google, não dá pra recuperar senha
+    if (!usuario.senha && usuario.googleId) {
+      return res.status(400).json({
+        mensagem: 'Esta conta usa login do Google. Entre com o Google.'
+      });
+    }
+
+    const token = usuario.gerarResetToken();
     await usuario.save();
-    reg.usado = true;
-    await reg.save();
-    req.login(usuario, (err) => {
-      if (err) return res.json({ mensagem: 'Senha alterada com sucesso!', usuario: sanitize(usuario) });
-      req.session.save(() =>
-        res.json({ mensagem: 'Senha alterada com sucesso!', usuario: sanitize(usuario) })
-      );
+
+    const link = `${BASE_URL}/recuperar-senha.html?token=${token}`;
+
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px;border:1px solid #eee;border-radius:12px">
+        <h2 style="margin:0 0 12px">Recuperação de Senha</h2>
+        <p>Olá, ${usuario.nome || ''}!</p>
+        <p>Recebemos um pedido de recuperação de senha para sua conta no <strong>Spoiller Esperado</strong>.</p>
+        <p>Clique no botão abaixo para definir uma nova senha:</p>
+        <p style="text-align:center;margin:28px 0">
+          <a href="${link}"
+             style="display:inline-block;background:#1a2b4a;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold">
+            Redefinir minha senha
+          </a>
+        </p>
+        <p style="color:#666;font-size:13px">Este link expira em <strong>1 hora</strong>. Se você não solicitou, ignore este e-mail.</p>
+        <p style="color:#999;font-size:12px;word-break:break-all">Se o botão não funcionar, copie e cole este link no navegador:<br>${link}</p>
+      </div>
+    `;
+
+    await enviarEmail({
+      para: usuario.email,
+      nome: usuario.nome,
+      assunto: 'Recuperação de senha — Spoiler Esperado',
+      html
     });
+
+    return res.json(respostaPadrao);
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ mensagem: 'Erro ao alterar senha.' });
+    console.error('Erro em /api/recuperar/solicitar:', err);
+    return res.status(500).json({ mensagem: 'Erro ao processar solicitação.' });
+  }
+});
+
+// PASSO 2: usuário clica no link → manda token + nova senha
+app.post('/api/recuperar/redefinir', async (req, res) => {
+  try {
+    const { token, novaSenha } = req.body;
+
+    if (!token || !novaSenha) {
+      return res.status(400).json({ mensagem: 'Token e nova senha são obrigatórios.' });
+    }
+    if (novaSenha.length < 6) {
+      return res.status(400).json({ mensagem: 'A senha deve ter ao menos 6 caracteres.' });
+    }
+
+    const usuario = await User.findOne({
+      resetToken: token,
+      resetTokenExpira: { $gt: new Date() }
+    }).select('+senha');
+
+    if (!usuario) {
+      return res.status(400).json({ mensagem: 'Link inválido ou expirado. Solicite um novo.' });
+    }
+
+    usuario.senha = novaSenha;       // hook pre('save') faz hash
+    usuario.resetToken = null;
+    usuario.resetTokenExpira = null;
+    await usuario.save();
+
+    return res.json({ mensagem: 'Senha alterada com sucesso! Faça login.' });
+  } catch (err) {
+    console.error('Erro em /api/recuperar/redefinir:', err);
+    return res.status(500).json({ mensagem: 'Erro ao redefinir senha.' });
   }
 });
 
@@ -502,6 +597,11 @@ app.post('/api/cadastro', async (req, res) => {
     });
 
     await novo.save();
+
+    // 📧 Dispara e-mail de boas-vindas (não bloqueia a resposta)
+    enviarEmailBoasVindas(novo).catch(err =>
+      console.error('Falha ao enviar boas-vindas:', err.message)
+    );
 
     req.login(novo, (err) => {
       if (err) {
@@ -709,6 +809,10 @@ passport.use(new GoogleStrategy({
         precisaCompletarPerfil: true
       });
       await usuario.save();
+            // 📧 Boas-vindas só pra quem é novo pelo Google
+      enviarEmailBoasVindas(usuario).catch(err =>
+        console.error('Falha ao enviar boas-vindas (Google):', err.message)
+      );
     } else if (!usuario.googleId) {
       // Usuário já existia (email cadastrado antes) — vincula o googleId
       usuario.googleId = profile.id;
