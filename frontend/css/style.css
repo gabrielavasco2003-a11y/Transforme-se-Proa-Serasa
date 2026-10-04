@@ -86,6 +86,19 @@ nav a {
     border: none;
     font-weight: bold;
     font-size: 16px;
+    overflow: hidden;      /* 👈 garante que a imagem não vaze do círculo */
+    padding: 0;            /* 👈 sem padding, pra imagem preencher */
+}
+
+/* Imagem do avatar dentro do botão (quando o usuário escolhe uma foto) */
+#avatar .avatar-img,
+#avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+    pointer-events: none;  /* 👈 clique passa pro botão, não pra img */
 }
 
 /* Dropdown — FORÇA EMPILHADO */
@@ -278,6 +291,7 @@ footer a {
     color: #FCF4E9;
     text-decoration: none;
 }
+
 /* ============================================
    Botão X para fechar o dropdown do usuário
    ============================================ */
@@ -292,11 +306,10 @@ footer a {
     width: 100% !important;
     border-bottom: 1px solid #eee;
     background: transparent !important;
-    pointer-events: none;   /* 👈 clique passa direto pelo <li> */
+    pointer-events: none;
     cursor: default !important;
 }
 
-/* Remove o hover do <li> que dá impressão de clicável */
 .dropdown-close-item:hover {
     background: transparent !important;
 }
@@ -310,11 +323,11 @@ footer a {
     font-size: 18px;
     font-weight: bold;
     line-height: 1;
-    width: 100% !important;        /* 👈 ocupa todo o <li> */
-    padding: 10px 15px !important; /* 👈 área de clique igual aos outros itens */
+    width: 100% !important;
+    padding: 10px 15px !important;
     text-align: right;
     border-radius: 0;
-    pointer-events: auto;          /* 👈 recebe o clique */
+    pointer-events: auto;
     transition: background 0.15s ease, color 0.15s ease;
 }
 

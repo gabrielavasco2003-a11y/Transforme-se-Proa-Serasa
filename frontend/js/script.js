@@ -2,6 +2,7 @@
 // script.js — compartilhado por todas as páginas
 // - Mantém o usuário logado (pergunta ao backend /api/me)
 // - Alterna entre #nav-visitante e #user-menu
+// - Mostra o avatar escolhido no perfil (imagem ou inicial)
 // - Cards de livro abrem book.html?volumeId=...
 // - Setas de rolagem nas seções (só no index.html)
 // - NÃO controla o dropdown: isso é feito pelo onclick inline no HTML
@@ -165,11 +166,13 @@ async function carregarNovos() {
 }
 
 /* ================= SESSÃO / LOGIN PERSISTENTE ================= */
-/* Só mostra/esconde nav-visitante vs user-menu e coloca a inicial.
+/* Só mostra/esconde nav-visitante vs user-menu.
+   Aplica avatar do perfil (imagem) ou inicial do nome.
    NÃO controla abrir/fechar do dropdown — isso é do onclick inline no HTML. */
 async function checarSessao() {
   const navVisitante = document.getElementById('nav-visitante');
   const userMenu     = document.getElementById('user-menu');
+  const avatarBtn    = document.getElementById('avatar');
   const avatarInit   = document.getElementById('avatar-initial');
 
   if (!navVisitante && !userMenu) return;
@@ -192,7 +195,11 @@ async function checarSessao() {
       userMenu.classList.remove('hidden');
       userMenu.style.display = 'block';
     }
-    if (avatarInit) {
+
+    // 🔥 AVATAR: usa imagem salva se existir, senão a inicial
+    if (avatarBtn && user.avatar) {
+      avatarBtn.innerHTML = `<img src="${escapeHtml(user.avatar)}" alt="Avatar de ${escapeHtml(user.nome || user.usuario || 'usuário')}" class="avatar-img">`;
+    } else if (avatarInit) {
       const nome = user.usuario || user.nome || user.email || '?';
       avatarInit.textContent = String(nome).trim().charAt(0).toUpperCase() || '?';
     }
@@ -226,8 +233,6 @@ async function bindLogout() {
 }
 
 /* ================= FECHAR DROPDOWN AO CLICAR FORA (delegado) ================= */
-/* Este é o único listener global — e NÃO interfere no X nem no avatar, */
-/* porque verifica `closest('#fechar-dropdown')` antes de fazer qualquer coisa. */
 safeRun('fechar dropdown (click fora)', () => {
   document.addEventListener('click', (e) => {
     const um = document.getElementById('user-menu');
