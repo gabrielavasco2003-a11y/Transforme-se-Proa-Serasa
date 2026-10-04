@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações — Spoiler Esperado</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/configuracoes.css">
+</head>
+<body>
+
+<header role="banner">
+    <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
+        <img src="/img/logo/Logotipo_Logo_ModoClaro.png" alt="Logo Spoiler Esperado">
+    </a>
+
+    <form id="search-form" action="/busca.html" method="get" role="search">
+        <label for="search-input" class="sr-only">Buscar livros</label>
+        <input type="search" name="q" id="search-input" placeholder="Insira palavras-chave" aria-label="Buscar livros">
+        <button type="submit" id="search-btn">Pesquisar</button>
+    </form>
+
+    <nav id="nav-visitante" aria-label="Navegação de visitante">
+        <ul>
+            <li><a href="/cadastro.html">Cadastro</a></li>
+            <li><a href="/login.html">Login</a></li>
+        </ul>
+    </nav>
+
+    <nav id="user-menu" class="hidden" hidden aria-label="Menu do usuário">
+        <button
+            id="avatar"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="dropdown"
+            aria-label="Abrir menu do usuário"
+            onclick="
+                event.preventDefault();
+                var d = document.getElementById('dropdown');
+                var a = document.getElementById('avatar');
+                if (!d) return;
+                d.classList.remove('hidden');
+                d.hidden = false;
+                d.style.display = 'block';
+                if (a) a.setAttribute('aria-expanded', 'true');
+            "
+        >
+            <span id="avatar-initial" aria-hidden="true">?</span>
+        </button>
+
+        <ul id="dropdown" class="hidden" role="menu" hidden>
+            <li role="none" class="dropdown-close-item">
+                <button
+                    id="fechar-dropdown"
+                    type="button"
+                    class="dropdown-close"
+                    aria-label="Fechar menu"
+                    onclick="
+                        event.preventDefault();
+                        event.stopPropagation();
+                        var d = document.getElementById('dropdown');
+                        var a = document.getElementById('avatar');
+                        if (d) {
+                            d.classList.add('hidden');
+                            d.hidden = true;
+                            d.style.display = 'none';
+                        }
+                        if (a) a.setAttribute('aria-expanded', 'false');
+                    "
+                >✕</button>
+            </li>
+            <li role="none"><a href="/adicionar-livro.html" role="menuitem">➕ Adicionar Livro</a></li>
+            <li role="none"><a href="/shelf.html" role="menuitem">Minha Estante</a></li>
+            <li role="none"><a href="/perfil.html" role="menuitem">Meu Perfil</a></li>
+            <li role="none"><a href="/editar-perfil.html" role="menuitem">Editar Perfil</a></li>
+            <li role="none"><a href="/conquistas.html" role="menuitem">Minhas Conquistas</a></li>
+            <li role="none"><a href="/configuracoes.html" role="menuitem">Configurações</a></li>
+            <li role="none"><a href="#" id="logout" role="menuitem">Logout</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main class="config-main">
+    <section class="config-hero">
+        <h1>⚙️ Configurações</h1>
+        <p>Personalize sua experiência no Spoiler Esperado.</p>
+    </section>
+
+    <!-- ===================== APARÊNCIA ===================== -->
+    <section class="config-section">
+        <h2>🎨 Aparência</h2>
+
+        <div class="config-item">
+            <div class="config-label">
+                <strong>Tema</strong>
+                <span>Escolha entre claro, escuro ou automático</span>
+            </div>
+            <div class="theme-toggle" role="radiogroup" aria-label="Escolha do tema">
+                <button type="button" data-theme="light" class="theme-btn" role="radio" aria-checked="false">
+                    <span class="theme-preview light-preview"></span>
+                    ☀️ Claro
+                </button>
+                <button type="button" data-theme="dark" class="theme-btn" role="radio" aria-checked="false">
+                    <span class="theme-preview dark-preview"></span>
+                    🌙 Escuro
+                </button>
+                <button type="button" data-theme="auto" class="theme-btn" role="radio" aria-checked="false">
+                    <span class="theme-preview auto-preview"></span>
+                    💻 Sistema
+                </button>
+            </div>
+        </div>
+
+        <div class="config-item">
+            <div class="config-label">
+                <strong>Tamanho da fonte</strong>
+                <span>Ajusta o tamanho do texto em todo o site</span>
+            </div>
+            <select id="pref-font-size" class="config-select">
+                <option value="small">Pequena</option>
+                <option value="medium" selected>Média (padrão)</option>
+                <option value="large">Grande</option>
+            </select>
+        </div>
+    </section>
+
+    <!-- ===================== IDIOMA E REGIÃO ===================== -->
+    <section class="config-section">
+        <h2>🌐 Idioma e Região</h2>
+
+        <div class="config-item">
+            <div class="config-label">
+                <strong>Idioma da interface</strong>
+                <span>Em breve teremos mais idiomas</span>
+            </div>
+            <select id="pref-language" class="config-select" disabled>
+                <option value="pt-BR" selected>Português (Brasil)</option>
+                <option value="en">English (em breve)</option>
+            </select>
+        </div>
+
+        <div class="config-item">
+            <div class="config-label">
+                <strong>Formato de data</strong>
+                <span>Como as datas serão exibidas</span>
+            </div>
+            <select id="pref-date-format" class="config-select">
+                <option value="DD/MM/YYYY" selected>DD/MM/AAAA (ex: 25/12/2025)</option>
+                <option value="MM/DD/YYYY">MM/DD/AAAA (ex: 12/25/2025)</option>
+            </select>
+        </div>
+    </section>
+
+    <!-- ===================== CONTA ===================== -->
+    <section class="config-section">
+        <h2>👤 Conta</h2>
+
+        <div class="config-item">
+            <div class="config-label">
+                <strong>Alterar senha</strong>
+                <span>Enviaremos um código pro seu e-mail</span>
+            </div>
+            <a href="/recuperar-email.html" class="btn-secondary">🔑 Alterar senha</a>
+        </div>
+
+        <div class="config-item">
+            <div class="config-label">
+                <strong>Baixar meus dados</strong>
+                <span>Exportar sua estante como arquivo</span>
+            </div>
+            <div class="export-buttons">
+                <button type="button" id="btn-export-json" class="btn-secondary">📥 JSON</button>
+                <button type="button" id="btn-export-csv"  class="btn-secondary">📊 CSV</button>
+            </div>
+        </div>
+
+        <div class="config-item danger-item">
+            <div class="config-label">
+                <strong>Excluir conta</strong>
+                <span>Esta ação é permanente e não pode ser desfeita</span>
+            </div>
+            <button type="button" id="btn-delete-account" class="btn-danger">🗑️ Excluir conta</button>
+        </div>
+    </section>
+
+    <!-- ===================== AÇÕES ===================== -->
+    <div id="config-feedback" class="config-feedback hidden" hidden></div>
+
+    <div class="config-actions">
+        <button type="button" id="btn-save-config" class="btn-primary">Salvar configurações</button>
+        <button type="button" id="btn-reset-config" class="btn-secondary">Restaurar padrões</button>
+    </div>
+</main>
+
+<footer>
+    <div id="logo-footer">
+        <img src="/img/logo/Logo.svg" alt="Logo Spoiler Esperado">
+    </div>
+    <ul>
+        <li><a href="/quem-somos.html">Quem somos</a></li>
+        <li><a href="/termos-servicos.html">Termos e serviços</a></li>
+        <li><a href="/politica-privacidade.html">Política de privacidade</a></li>
+        <li><a href="/fale-conosco.html">Fale conosco</a></li>
+    </ul>
+</footer>
+
+<script src="/js/offline.js"></script>
+<script src="/js/theme.js"></script>
+<script src="/js/script.js"></script>
+<script src="/js/configuracoes.js"></script>
+</body>
+</html>
