@@ -309,3 +309,14 @@ html.dark a.btn-editar:hover {
         height: 130px;
     }
 }
+.link-conquistas {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    cursor: pointer;
+}
+
+.link-conquistas:hover {
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
