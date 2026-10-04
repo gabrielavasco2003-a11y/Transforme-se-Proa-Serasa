@@ -129,7 +129,7 @@ app.get('/recuperar-senha.html',  (req, res) => sendHtmlFile('recuperar-senha.ht
 app.get('/validar-telefone.html', (req, res) => sendHtmlFile('validar-telefone.html', res));
 app.get('/validar-codigo.html',   (req, res) => sendHtmlFile('validar-codigo.html', res));
 
-// ---------- ROTAS HTML: INSTITUCIONAIS + CONQUISTAS ----------
+// ---------- ROTAS HTML: INSTITUCIONAIS + CONQUISTAS + CONFIGURAÇÕES ----------
 app.get('/quem-somos.html',           (req, res) => sendHtmlFile('quem-somos.html', res));
 app.get('/quem-somos',                (req, res) => sendHtmlFile('quem-somos.html', res));
 
@@ -144,6 +144,9 @@ app.get('/fale-conosco',              (req, res) => sendHtmlFile('fale-conosco.h
 
 app.get('/conquistas.html',           (req, res) => sendHtmlFile('conquistas.html', res));
 app.get('/conquistas',                (req, res) => sendHtmlFile('conquistas.html', res));
+
+app.get('/configuracoes.html',        (req, res) => sendHtmlFile('configuracoes.html', res));
+app.get('/configuracoes',             (req, res) => sendHtmlFile('configuracoes.html', res));
 
 // ---------- ADICIONAR LIVRO ----------
 app.get('/adicionar-livro.html', (req, res) => sendHtmlFile('adicionar-livro.html', res));
@@ -188,6 +191,10 @@ const UserSchema = new mongoose.Schema({
   nascimento: Date,
   googleId: String,
   avatar: { type: String, default: '/img/perfil/1.png' },
+  config: {
+    language:   { type: String, default: 'pt-BR' },
+    dateFormat: { type: String, default: 'DD/MM/YYYY' }
+  },
   livros: [{
     volumeId: String,
     isbn: String,
@@ -624,6 +631,44 @@ app.post('/api/perfil/atualizar', async (req, res) => {
   } catch (err) {
     console.error('Erro em /api/perfil/atualizar:', err);
     return res.status(500).json({ mensagem: 'Erro ao atualizar perfil.' });
+  }
+});
+
+// ================================================================
+// ============ NOVO: CONFIGURAÇÕES DO USUÁRIO ====================
+// ================================================================
+app.get('/api/config', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
+    const u = await User.findById(req.user._id).select('config').lean();
+    return res.json({ config: u?.config || {} });
+  } catch (err) {
+    console.error('Erro em GET /api/config:', err);
+    return res.status(500).json({ mensagem: 'Erro ao buscar configurações.' });
+  }
+});
+
+app.post('/api/config', async (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
+
+    const { language, dateFormat } = req.body;
+
+    const LANG_VALIDOS  = ['pt-BR', 'en'];
+    const DATES_VALIDOS = ['DD/MM/YYYY', 'MM/DD/YYYY'];
+
+    const novo = {};
+    if (LANG_VALIDOS.includes(language))     novo['config.language']   = language;
+    if (DATES_VALIDOS.includes(dateFormat))  novo['config.dateFormat'] = dateFormat;
+
+    if (Object.keys(novo).length) {
+      await User.findByIdAndUpdate(req.user._id, { $set: novo });
+    }
+
+    return res.json({ mensagem: 'Configurações salvas!' });
+  } catch (err) {
+    console.error('Erro em POST /api/config:', err);
+    return res.status(500).json({ mensagem: 'Erro ao salvar configurações.' });
   }
 });
 
@@ -1131,7 +1176,7 @@ app.post('/api/shelf/remove', async (req, res) => {
 });
 
 // ================================================================
-// ============ NOVO: ADICIONAR LIVRO MANUALMENTE =================
+// ============ ADICIONAR LIVRO MANUALMENTE =======================
 // ================================================================
 app.post('/api/shelf/add-manual', async (req, res) => {
   try {
