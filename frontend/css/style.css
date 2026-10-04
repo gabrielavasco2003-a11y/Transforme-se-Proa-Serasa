@@ -536,3 +536,31 @@ html.dark hr {
 html.font-small  { font-size: 16px; }
 html.font-medium { font-size: 18px; }
 html.font-large  { font-size: 20px; }
+/* ============================================
+   Logo claro / escuro — troca automática
+   ============================================ */
+
+/* Por padrão: mostra a clara, esconde a escura */
+#logo .logo-claro {
+    display: inline-block;
+}
+
+#logo .logo-escuro {
+    display: none;
+}
+
+/* Tema escuro: inverte */
+html.dark #logo .logo-claro {
+    display: none;
+}
+
+html.dark #logo .logo-escuro {
+    display: inline-block;
+}
+
+/* Garante que as 2 logos tenham o mesmo tamanho */
+#logo img {
+    width: 150px;
+    height: auto;
+    display: block;
+}
