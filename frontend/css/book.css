@@ -130,33 +130,7 @@ header nav a {
 
 .link-btn:hover { color: #c00; }
 
-/* Progresso */
-.form-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-}
 
-.form-row label {
-  min-width: 110px;
-  font-size: 0.9rem;
-}
-
-.form-row input {
-  flex: 1;
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-
-.form-row input:focus {
-  outline: none;
-  border-color: #b09a6a;
-  box-shadow: 0 0 0 2px rgba(176,154,106,0.2);
-}
 
 /* Reações */
 .reactions-grid {

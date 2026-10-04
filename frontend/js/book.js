@@ -1,21 +1,6 @@
 // book.js — detalhe do livro (via proxy do backend)
 // Prioriza dados locais (MongoDB) quando existirem; senão, usa API Google via backend.
 
-const REACTION_LABELS = {
-  amei: '😍 Amei',
-  quero_mais: '⭐ Quero mais',
-  ok: '😐 É ok',
-  chorei: '😭 Chorei',
-  curti: '👍 Curti',
-  fraco: '😕 Fraco',
-  engracado: '😂 Engraçado',
-  muito_ruim: '👎 Muito ruim',
-  favorito: '❤️ Favorito',
-  recomendo: '🔥 Recomendo',
-  confuso: '🤔 Confuso',
-  abandonei: '🗑️ Abandonei'
-};
-
 async function getUser() {
   try {
     const res = await fetch('/api/me', { credentials: 'same-origin' });
@@ -69,13 +54,10 @@ async function loadBook() {
     await loadRating(volumeId, !!user);
 
     if (user) {
-      // Mostra seções extras (progresso, reação, nota)
       document.getElementById('user-extras').hidden = false;
       document.getElementById('comment-box').hidden = false;
 
-      // Carrega dados da estante (status, reação, progresso) + liga controles
       await setupShelfControls(volumeId, user);
-
       setupComments(volumeId, user);
     } else {
       document.getElementById('user-extras').hidden = true;
@@ -163,13 +145,11 @@ async function saveRating(volumeId, value) {
   }
 }
 
-/* ========== ESTANTE / STATUS / REAÇÃO / PROGRESSO ========== */
+/* ========== ESTANTE / STATUS / REAÇÃO ========== */
 async function setupShelfControls(volumeId, user) {
   const picker = document.getElementById('status-picker');
   const buttons = picker.querySelectorAll('.status-btn');
   const reactionBtns = document.querySelectorAll('.reaction-btn');
-  const pageInput = document.getElementById('current-page');
-  const chapterInput = document.getElementById('current-chapter');
 
   // Busca o item da estante (se existir)
   let item = null;
@@ -202,9 +182,9 @@ async function setupShelfControls(volumeId, user) {
   // Preenche com o que já existe
   if (item) {
     if (item.status) marcarStatus(item.status);
-    if (item.reaction) marcarReacao(item.reaction);
-    if (item.currentPage != null) pageInput.value = item.currentPage;
-    if (item.chapter) chapterInput.value = item.chapter;
+    // O backend guarda reactions como array; pegamos o primeiro (se houver)
+    const r = Array.isArray(item.reactions) && item.reactions.length ? item.reactions[0] : null;
+    if (r) marcarReacao(r);
   }
 
   const setDisabled = (disabled) => {
@@ -212,7 +192,6 @@ async function setupShelfControls(volumeId, user) {
     reactionBtns.forEach(b => { b.disabled = disabled; });
   };
 
-  // Salva no backend (cria ou atualiza)
   async function salvarShelf(patch) {
     setDisabled(true);
     try {
@@ -248,7 +227,8 @@ async function setupShelfControls(volumeId, user) {
   reactionBtns.forEach(btn => {
     btn.onclick = async () => {
       const reaction = btn.dataset.reaction;
-      const nova = item?.reaction === reaction ? null : reaction;
+      const atual = Array.isArray(item?.reactions) && item.reactions.length ? item.reactions[0] : null;
+      const nova = atual === reaction ? null : reaction;
       try {
         await salvarShelf({ reaction: nova });
         marcarReacao(nova);
@@ -256,17 +236,6 @@ async function setupShelfControls(volumeId, user) {
       } catch (e) { console.error(e); alert(e.message); }
     };
   });
-
-  // Progresso — salva ao sair do campo (blur) para evitar request a cada tecla
-  const salvarProgresso = async () => {
-    const currentPage = pageInput.value === '' ? null : Number(pageInput.value);
-    const chapter = chapterInput.value.trim() || null;
-    try {
-      await salvarShelf({ currentPage, chapter });
-    } catch (e) { console.error(e); alert(e.message); }
-  };
-  pageInput.onblur = salvarProgresso;
-  chapterInput.onblur = salvarProgresso;
 }
 
 /* ========== COMENTÁRIOS ========== */
