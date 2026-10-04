@@ -564,3 +564,9 @@ html.dark #logo .logo-escuro {
     height: auto;
     display: block;
 }
+/* Banner — troca a logo também */
+.banner-logo .logo-claro { display: inline-block; }
+.banner-logo .logo-escuro { display: none; }
+
+html.dark .banner-logo .logo-claro { display: none; }
+html.dark .banner-logo .logo-escuro { display: inline-block; }

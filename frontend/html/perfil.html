@@ -5,30 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil - Spoiler Esperado</title>
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="../css/perfil.css">
+    <link rel="stylesheet" href="/css/perfil.css">
 </head>
 <body>
-<header role="banner">
-    <!-- Logo -->
-   <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
-    <img src="/img/logo/Logotipo_Logo_ModoClaro.png"  alt="Logo Spoiler Esperado" class="logo-claro">
-    <img src="/img/logo/Logotipo_Logo_ModoEscuro.png" alt="Logo Spoiler Esperado" class="logo-escuro">
-</a>
 
-    <!-- Busca centralizada -->
+<header role="banner">
+    <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
+        <img src="/img/logo/Logotipo_Logo_ModoClaro.png"  alt="Logo Spoiler Esperado" class="logo-claro">
+        <img src="/img/logo/Logotipo_Logo_ModoEscuro.png" alt="Logo Spoiler Esperado" class="logo-escuro">
+    </a>
+
     <form id="search-form" action="/busca.html" method="get" role="search">
         <label for="search-input" class="sr-only">Buscar livros</label>
-        <input
-            type="search"
-            name="q"
-            id="search-input"
-            placeholder="Insira palavras-chave"
-            aria-label="Buscar livros"
-        >
+        <input type="search" name="q" id="search-input" placeholder="Insira palavras-chave" aria-label="Buscar livros">
         <button type="submit" id="search-btn">Pesquisar</button>
     </form>
 
-    <!-- Navegação para visitantes (não logados) -->
     <nav id="nav-visitante" aria-label="Navegação de visitante">
         <ul>
             <li><a href="/cadastro.html">Cadastro</a></li>
@@ -36,9 +28,7 @@
         </ul>
     </nav>
 
-    <!-- Menu do usuário logado -->
     <nav id="user-menu" class="hidden" hidden aria-label="Menu do usuário">
-        <!-- Avatar: SÓ ABRE -->
         <button
             id="avatar"
             type="button"
@@ -60,9 +50,7 @@
             <span id="avatar-initial" aria-hidden="true">?</span>
         </button>
 
-        <!-- Dropdown -->
         <ul id="dropdown" class="hidden" role="menu" hidden>
-            <!-- Botão X: SÓ FECHA -->
             <li role="none" class="dropdown-close-item">
                 <button
                     id="fechar-dropdown"
@@ -83,68 +71,70 @@
                     "
                 >✕</button>
             </li>
-<li role="none"><a href="/adicionar-livro.html" role="menuitem">➕ Adicionar Livro</a></li>
+            <li role="none"><a href="/adicionar-livro.html" role="menuitem">➕ Adicionar Livro</a></li>
             <li role="none"><a href="/shelf.html" role="menuitem">Minha Estante</a></li>
             <li role="none"><a href="/perfil.html" role="menuitem">Meu Perfil</a></li>
             <li role="none"><a href="/editar-perfil.html" role="menuitem">Editar Perfil</a></li>
             <li role="none"><a href="/conquistas.html" role="menuitem">Minhas Conquistas</a></li>
-              <li role="none"><a href="/configuracoes.html" role="menuitem">Configurações</a></li>
+            <li role="none"><a href="/configuracoes.html" role="menuitem">Configurações</a></li>
             <li role="none"><a href="#" id="logout" role="menuitem">Logout</a></li>
         </ul>
     </nav>
 </header>
-    <main>
-        <section id="perfil">
-            <div class="perfil-header">
-                <div class="perfil-esquerda">
-                    <div id="avatar"></div>
-                    <h2 id="nomePerfil">Carregando…</h2>
-                </div>
-                <button id="editar-perfil">
-                    <a href="editar-perfil.html" class="btn">Editar perfil</a>
-                </button>
-            </div>
 
-            <div class="perfil-info">
-                <p><strong>Nome:</strong> <span id="nomeCompletoPerfil">—</span></p>
-                <p><strong>E-mail:</strong> <span id="emailPerfil">—</span></p>
-                <p><strong>Usuário:</strong> <span id="usuarioPerfil">—</span></p>
-                <p><strong>Data de nascimento:</strong> <span id="nascimentoPerfil">—</span></p>
-            </div>
-
-            <div class="conquistas">
-                <h3>Conquistas</h3>
-                <div class="lista-conquistas"></div>
-            </div>
-
-            <!-- Prévia da Shelf -->
-            <section id="previa-shelf" class="previa-shelf" role="link" tabindex="0"
-                     aria-label="Ver minha shelf completa">
-                <div class="previa-header">
-                    <h3>Minha Shelf</h3>
-                    <span class="ver-mais">Ver tudo →</span>
+<main>
+    <section id="perfil">
+        <div class="perfil-header">
+            <div class="perfil-esquerda">
+                <!-- ✅ Avatar como imagem, classe própria (não conflita com #avatar do header) -->
+                <div class="perfil-avatar" id="perfil-avatar">
+                    <img id="perfil-avatar-img" src="/img/perfil/1.png" alt="Avatar do usuário">
                 </div>
-                <div class="previa-lista" id="previaLista">
-                    <p class="vazio">Carregando…</p>
-                </div>
-            </section>
+                <h2 id="nomePerfil">Carregando…</h2>
+            </div>
+            <a href="/editar-perfil.html" class="btn btn-editar">Editar perfil</a>
+        </div>
+
+        <div class="perfil-info">
+            <p><strong>Nome:</strong> <span id="nomeCompletoPerfil">—</span></p>
+            <p><strong>E-mail:</strong> <span id="emailPerfil">—</span></p>
+            <p><strong>Usuário:</strong> <span id="usuarioPerfil">—</span></p>
+            <p><strong>Data de nascimento:</strong> <span id="nascimentoPerfil">—</span></p>
+        </div>
+
+        <div class="conquistas">
+            <h3>Conquistas</h3>
+            <div class="lista-conquistas"></div>
+        </div>
+
+        <section id="previa-shelf" class="previa-shelf" role="link" tabindex="0"
+                 aria-label="Ver minha shelf completa">
+            <div class="previa-header">
+                <h3>Minha Shelf</h3>
+                <span class="ver-mais">Ver tudo →</span>
+            </div>
+            <div class="previa-lista" id="previaLista">
+                <p class="vazio">Carregando…</p>
+            </div>
         </section>
-    </main>
+    </section>
+</main>
 
 <footer>
     <div id="logo-footer">
         <img src="/img/logo/Logo.svg" alt="Logo Spoiler Esperado">
     </div>
     <ul>
-<li><a href="/quem-somos.html">Quem somos</a></li>
-<li><a href="/termos-servicos.html">Termos e serviços</a></li>
-<li><a href="/politica-privacidade.html">Política de privacidade</a></li>
-<li><a href="/fale-conosco.html">Fale conosco</a></li>
+        <li><a href="/quem-somos.html">Quem somos</a></li>
+        <li><a href="/termos-servicos.html">Termos e serviços</a></li>
+        <li><a href="/politica-privacidade.html">Política de privacidade</a></li>
+        <li><a href="/fale-conosco.html">Fale conosco</a></li>
     </ul>
 </footer>
+
+<script src="/js/offline.js"></script>
 <script src="/js/theme.js"></script>
 <script src="/js/script.js"></script>
-    <script src="../js/offline.js"></script>
-    <script src="../js/perfil.js"></script>
+<script src="/js/perfil.js"></script>
 </body>
 </html>

@@ -1,4 +1,12 @@
 // ============================================================
+// perfil.js — Página de perfil do usuário
+// - Renderiza dados do usuário
+// - Aplica o avatar escolhido (imagem)
+// - Prévia da estante (shelf)
+// - Fallback offline (localStorage + IndexedDB)
+// ============================================================
+
+// ============================================================
 // Renderiza dados no DOM
 // ============================================================
 function renderPerfil(user) {
@@ -6,13 +14,22 @@ function renderPerfil(user) {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
-  set('nomePerfil',       user.nome    || 'Usuário');
-  set('nomeCompletoPerfil', user.nome  || '—');
-  set('emailPerfil',      user.email   || '—');
-  set('usuarioPerfil',    user.usuario || '—');
-  set('nascimentoPerfil', user.nascimento
+
+  set('nomePerfil',         user.nome    || 'Usuário');
+  set('nomeCompletoPerfil', user.nome    || '—');
+  set('emailPerfil',        user.email   || '—');
+  set('usuarioPerfil',      user.usuario || '—');
+  set('nascimentoPerfil',   user.nascimento
     ? new Date(user.nascimento).toLocaleDateString('pt-BR')
     : '—');
+
+  // 🔥 AVATAR: aplica a imagem escolhida (ou fallback pra 1.png)
+  const img = document.getElementById('perfil-avatar-img');
+  if (img) {
+    img.src = user.avatar || '/img/perfil/1.png';
+    img.alt = `Avatar de ${user.nome || 'usuário'}`;
+    img.onerror = () => { img.src = '/img/perfil/1.png'; };
+  }
 }
 
 // ============================================================
@@ -29,9 +46,9 @@ function renderPreviaShelf(itens = []) {
 
   lista.innerHTML = itens.slice(0, 4).map(item => `
     <div class="previa-item">
-      <img src="${item.thumbnail || '../../img/placeholder.png'}"
+      <img src="${item.thumbnail || '/img/placeholder.png'}"
            alt="${(item.title || '').replace(/"/g, '&quot;')}"
-           onerror="this.src='../../img/placeholder.png'">
+           onerror="this.src='/img/placeholder.png'">
       <span>${item.title || 'Sem título'}</span>
     </div>
   `).join('');
@@ -65,7 +82,7 @@ async function carregarPreviaShelf() {
 
 // Redireciona para shelf.html (clique ou teclado)
 function irParaShelf() {
-  window.location.href = 'shelf.html';
+  window.location.href = '/shelf.html';
 }
 document.getElementById('previa-shelf')?.addEventListener('click', irParaShelf);
 document.getElementById('previa-shelf')?.addEventListener('keydown', (e) => {
@@ -136,7 +153,6 @@ async function carregarPerfil() {
   }
 
   // 4) Nada em lugar nenhum → só aí manda para login
-  //    (mas se estamos offline, avisa em vez de redirecionar)
   if (!navigator.onLine) {
     const nomeEl = document.getElementById('nomePerfil');
     if (nomeEl) nomeEl.textContent = 'Modo offline — faça login quando houver conexão';
@@ -154,7 +170,7 @@ carregarPerfil();
 // Ações
 // ============================================================
 document.getElementById('editar-perfil')?.addEventListener('click', () => {
-  window.location.href = 'editar-perfil.html';
+  window.location.href = '/editar-perfil.html';
 });
 
 document.getElementById('excluir-conta')?.addEventListener('click', async () => {
