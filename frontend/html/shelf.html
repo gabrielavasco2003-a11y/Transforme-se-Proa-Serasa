@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Minha Estante - Spoiler Esperado</title>
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="../css/shelf.css">
+  <link rel="stylesheet" href="/css/shelf.css">
 </head>
 <body>
+
 <header role="banner">
     <!-- Logo -->
     <a href="/index.html" id="logo" aria-label="Página inicial - Spoiler Esperado">
@@ -82,7 +83,7 @@
                     "
                 >✕</button>
             </li>
-<li role="none"><a href="/adicionar-livro.html" role="menuitem">➕ Adicionar Livro</a></li>
+            <li role="none"><a href="/adicionar-livro.html" role="menuitem">➕ Adicionar Livro</a></li>
             <li role="none"><a href="/shelf.html" role="menuitem">Minha Estante</a></li>
             <li role="none"><a href="/perfil.html" role="menuitem">Meu Perfil</a></li>
             <li role="none"><a href="/editar-perfil.html" role="menuitem">Editar Perfil</a></li>
@@ -92,87 +93,88 @@
     </nav>
 </header>
 
-  <main>
+<main>
     <aside id="filters" class="filters" aria-label="Filtros da estante">
-      <h2>Filtro</h2>
+        <h2>Filtro</h2>
 
-      <section class="filter-block">
-        <div class="filter-group">
-          <label class="filter-label" for="rating-filter">Avaliação</label>
-          <div id="rating-filter" class="stars" role="group" aria-label="Filtrar por avaliação">
-            <button class="star-btn" data-value="1" type="button" aria-pressed="false">★</button>
-            <button class="star-btn" data-value="2" type="button" aria-pressed="false">★</button>
-            <button class="star-btn" data-value="3" type="button" aria-pressed="false">★</button>
-            <button class="star-btn" data-value="4" type="button" aria-pressed="false">★</button>
-            <button class="star-btn" data-value="5" type="button" aria-pressed="false">★</button>
-          </div>
-          <span class="rating-text">ou mais</span>
+        <section class="filter-block">
+            <div class="filter-group">
+                <label class="filter-label" for="rating-filter">Avaliação</label>
+                <div id="rating-filter" class="stars" role="group" aria-label="Filtrar por avaliação">
+                    <button class="star-btn" data-value="1" type="button" aria-pressed="false">★</button>
+                    <button class="star-btn" data-value="2" type="button" aria-pressed="false">★</button>
+                    <button class="star-btn" data-value="3" type="button" aria-pressed="false">★</button>
+                    <button class="star-btn" data-value="4" type="button" aria-pressed="false">★</button>
+                    <button class="star-btn" data-value="5" type="button" aria-pressed="false">★</button>
+                </div>
+                <span class="rating-text">ou mais</span>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label" for="status-filter">Status de leitura</label>
+                <select id="status-filter" class="filter-select">
+                    <option value="">Todos</option>
+                    <option value="quero">Quero Ver</option>
+                    <option value="lendo">Lendo</option>
+                    <option value="terminei">Terminei</option>
+                    <option value="pausei">Pausei</option>
+                    <option value="desisti">Desisti</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label" for="genre-filter">Gênero</label>
+                <input id="genre-filter" list="genre-list" type="text" placeholder="Digite o gênero..." class="filter-input" />
+                <datalist id="genre-list"></datalist>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label" for="author-filter">Autor</label>
+                <input id="author-filter" type="text" placeholder="Digite o autor..." class="filter-input" />
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label" for="year-filter">Ano</label>
+                <input id="year-filter" type="number" placeholder="Digite o ano..." min="0" class="filter-input" />
+            </div>
+        </section>
+
+        <section class="filter-block excluded-block">
+            <button id="undo-filter" type="button" class="exclude-btn">Excluir último filtro</button>
+        </section>
+
+        <div class="filter-actions">
+            <button id="apply-filters" type="button">Aplicar filtros</button>
+            <button id="clear-filters" type="button" class="secondary">Remover filtros</button>
         </div>
-
-        <div class="filter-group">
-          <label class="filter-label" for="status-filter">Status de leitura</label>
-          <select id="status-filter" class="filter-select">
-            <option value="">Todos</option>
-            <option value="quero">Quero Ver</option>
-            <option value="lendo">Lendo</option>
-            <option value="terminei">Terminei</option>
-            <option value="pausei">Pausei</option>
-            <option value="desisti">Desisti</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label class="filter-label" for="genre-filter">Gênero</label>
-          <input id="genre-filter" list="genre-list" type="text" placeholder="Digite o gênero..." class="filter-input" />
-          <datalist id="genre-list"></datalist>
-        </div>
-
-        <div class="filter-group">
-          <label class="filter-label" for="author-filter">Autor</label>
-          <input id="author-filter" type="text" placeholder="Digite o autor..." class="filter-input" />
-        </div>
-
-        <div class="filter-group">
-          <label class="filter-label" for="year-filter">Ano</label>
-          <input id="year-filter" type="number" placeholder="Digite o ano..." min="0" class="filter-input" />
-        </div>
-      </section>
-
-      <section class="filter-block excluded-block">
-        <button id="undo-filter" type="button" class="exclude-btn">Excluir último filtro</button>
-      </section>
-
-      <div class="filter-actions">
-        <button id="apply-filters" type="button">Aplicar filtros</button>
-        <button id="clear-filters" type="button" class="secondary">Remover filtros</button>
-      </div>
     </aside>
 
     <section class="shelf">
-      <div class="shelf-header">
-        <h1>Minha Estante</h1>
-      </div>
+        <div class="shelf-header">
+            <h1>Minha Estante</h1>
+        </div>
 
-      <div id="loading" class="loading-message" hidden>Carregando...</div>
-      <div id="no-results" class="no-results-message" hidden>Nenhum resultado encontrado.</div>
+        <div id="loading" class="loading-message" hidden>Carregando...</div>
+        <div id="no-results" class="no-results-message" hidden>Nenhum resultado encontrado.</div>
 
-      <div id="shelf-container" class="books-grid"></div>
+        <div id="shelf-container" class="books-grid"></div>
     </section>
-  </main>
+</main>
 
 <footer>
     <div id="logo-footer">
         <img src="/img/logo/Logo.svg" alt="Logo Spoiler Esperado">
     </div>
     <ul>
-<li><a href="/quem-somos.html">Quem somos</a></li>
-<li><a href="/termos-servicos.html">Termos e serviços</a></li>
-<li><a href="/politica-privacidade.html">Política de privacidade</a></li>
-<li><a href="/fale-conosco.html">Fale conosco</a></li>
+        <li><a href="/quem-somos.html">Quem somos</a></li>
+        <li><a href="/termos-servicos.html">Termos e serviços</a></li>
+        <li><a href="/politica-privacidade.html">Política de privacidade</a></li>
+        <li><a href="/fale-conosco.html">Fale conosco</a></li>
     </ul>
 </footer>
+
 <script src="/js/offline.js"></script>
 <script src="/js/script.js"></script>
-  <script src="../js/shelf.js"></script>
+<script src="/js/shelf.js"></script>
 </body>
 </html>

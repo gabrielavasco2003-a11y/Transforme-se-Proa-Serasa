@@ -268,3 +268,42 @@ footer a { color: #FCF4E9; text-decoration: none; font-size: 12px; }
   .filters { width: 100%; border-right: none; border-bottom: 1px solid #C09E68; }
   .books-grid { grid-template-columns: 1fr; }
 }
+/* =========================================
+   Card clicável → abre o livro
+   ========================================= */
+
+.book-card.card-clickable {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.book-card.card-clickable:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+    border-color: #B89764;
+}
+
+.book-card.card-clickable:focus-visible {
+    outline: 3px solid #B89764;
+    outline-offset: 3px;
+}
+
+.book-card.card-clickable:active {
+    transform: translateY(-2px);
+}
+
+/* Título com destaque no hover do card */
+.book-card.card-clickable:hover .book-title {
+    color: #162745;
+    text-decoration: underline;
+    text-decoration-color: #B89764;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+}
+
+/* Botões do card: sempre com cursor pointer e não propagam pra cima */
+.card-actions button {
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+}

@@ -112,7 +112,6 @@ async function carregarEstante(salvarHistorico = false) {
     if (ratingBtn) {
       const minRating = parseInt(ratingBtn.dataset.value, 10);
       livros = livros.filter(l => {
-        // userRating vai de 0 a 10 → converte p/ 0–5; se não houver, usa 0
         const nota5 = (l.userRating != null) ? (l.userRating / 2) : 0;
         return nota5 >= minRating;
       });
@@ -135,6 +134,15 @@ function renderShelf(livros) {
   livros.forEach(l => {
     const card = document.createElement('div');
     card.className = 'book-card';
+
+    // ✅ Card inteiro é clicável → vai pra /book.html?volumeId=...
+    if (l.volumeId) {
+      card.dataset.volumeId = l.volumeId;
+      card.setAttribute('role', 'link');
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('aria-label', `Abrir detalhes de ${l.title || 'livro'}`);
+      card.classList.add('card-clickable');
+    }
 
     const statusBadge = document.createElement('div');
     statusBadge.className = 'status-badge';
@@ -195,7 +203,8 @@ function renderShelf(livros) {
     editBtn.className = 'edit-btn';
     editBtn.type = 'button';
     editBtn.textContent = 'Editar';
-    editBtn.onclick = () => {
+    editBtn.onclick = (e) => {
+      e.stopPropagation();
       window.location.href = `/edit-shelf.html?volumeId=${encodeURIComponent(l.volumeId)}`;
     };
 
@@ -234,6 +243,23 @@ function renderShelf(livros) {
     card.appendChild(coverDiv);
     card.appendChild(infoDiv);
     card.appendChild(actionsDiv);
+
+    // ✅ Clique no card (fora de botões) → abre o livro
+    if (l.volumeId) {
+      card.addEventListener('click', (e) => {
+        // Se clicou em botão, link, ou algo com ação → ignora
+        if (e.target.closest('button, a, input, select, textarea')) return;
+        window.location.href = `/book.html?volumeId=${encodeURIComponent(l.volumeId)}`;
+      });
+
+      // Acessibilidade: Enter/Space também abre
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          window.location.href = `/book.html?volumeId=${encodeURIComponent(l.volumeId)}`;
+        }
+      });
+    }
 
     container.appendChild(card);
   });
@@ -301,10 +327,6 @@ document.getElementById('search-btn').onclick = async () => {
 
 document.getElementById('search-input').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') document.getElementById('search-btn').click();
-});
-
-document.getElementById('avatar')?.addEventListener('click', () => {
-  document.getElementById('dropdown')?.classList.toggle('hidden');
 });
 
 /* ===== INIT ===== */
