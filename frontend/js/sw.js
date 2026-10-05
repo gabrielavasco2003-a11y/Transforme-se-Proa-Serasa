@@ -1,7 +1,7 @@
 // Service Worker — Spoiler Esperado
 // v3 — network-first para JS/CSS, sem bugs de clone
 
-const CACHE_NAME = 'spoiler-esperado-v3';
+const CACHE_NAME = 'spoiler-esperado-v4';
 
 const PRECACHE = ['/', '/index.html'];
 
