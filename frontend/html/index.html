@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spoiler Esperado</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/cookies.css">
 </head>
 <body>
 <header role="banner">
@@ -136,14 +137,30 @@
         <img src="/img/logo/Logo.svg" alt="Logo Spoiler Esperado">
     </div>
     <ul>
-<li><a href="/quem-somos.html">Quem somos</a></li>
-<li><a href="/termos-servicos.html">Termos e serviços</a></li>
-<li><a href="/politica-privacidade.html">Política de privacidade</a></li>
-<li><a href="/fale-conosco.html">Fale conosco</a></li>
+        <li><a href="/quem-somos.html">Quem somos</a></li>
+        <li><a href="/termos-servicos.html">Termos e serviços</a></li>
+        <li><a href="/politica-privacidade.html">Política de privacidade</a></li>
+        <li><a href="/fale-conosco.html">Fale conosco</a></li>
     </ul>
 </footer>
+
 <script src="/js/offline.js"></script>
 <script src="/js/theme.js"></script>
 <script src="/js/script.js"></script>
+<script src="/js/cookies.js"></script>
+
+<!-- Banner de cookies -->
+<div id="cookie-banner" role="dialog" aria-live="polite" aria-label="Aviso de cookies">
+  <div class="cookie-content">
+    <p>
+      Este site usa cookies para melhorar sua experiência. Ao continuar navegando, você concorda com nossa
+      <a href="/politica-privacidade.html" target="_blank">Política de Privacidade</a>.
+    </p>
+    <div class="cookie-actions">
+      <button id="cookie-accept" type="button">Aceitar</button>
+      <button id="cookie-reject" type="button" class="secondary">Recusar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
