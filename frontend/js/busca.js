@@ -107,6 +107,22 @@ async function fetchBooksRaw(q, params = {}) {
   if (params.startIndex) url.searchParams.set("startIndex", String(params.startIndex));
   if (params.orderBy)    url.searchParams.set("orderBy", params.orderBy);
 
+  // 🔥 Envia os filtros ativos para o backend
+  if (state.year) {
+    url.searchParams.set("year", state.year);
+  }
+  if (state.author) {
+    url.searchParams.set("author", state.author);
+  }
+  if (state.includeCategories.length) {
+    const allCats = state.includeCategories.flatMap(cat => toApiCategoryList(cat));
+    url.searchParams.set("includeCategories", allCats.join("|"));
+  }
+  if (state.excludeCategories.length) {
+    const allCats = state.excludeCategories.flatMap(cat => toApiCategoryList(cat));
+    url.searchParams.set("excludeCategories", allCats.join("|"));
+  }
+
   const res = await fetch(url.toString(), { credentials: "same-origin" });
 
   if (!res.ok) {
@@ -188,45 +204,17 @@ function filterAndNormalize(items) {
 }
 
 /* ================= aplicar TODOS os filtros ================= */
+/* ================= aplicar filtros ================= */
+/* Só aplica o filtro de AVALIAÇÃO.
+   Os filtros de ano, autor e gênero são enviados direto para o Google Books
+   via fetchBooksRaw, então o backend já devolve os livros já filtrados. */
 function applyAllFilters(books) {
-  const includeApiLists = state.includeCategories.map(toApiCategoryList);
-  const excludeApiLists = state.excludeCategories.map(toApiCategoryList);
-
   return books.filter(b => {
     // Filtro de avaliação (nota do banco é 0-10; filtro em estrelas 0-5)
     if (state.rating && ((b.rating || 0) / 2) < state.rating) return false;
-
-    // Filtro de autor
-    if (state.author) {
-      const authors = (b.authors || []).join(" ").toLowerCase();
-      if (!authors.includes(state.author.toLowerCase())) return false;
-    }
-
-    // Filtro de ano
-    if (state.year && String(b.year) !== String(state.year)) return false;
-
-    // Filtro de gênero (incluir)
-    if (includeApiLists.length) {
-      const cats = (b.apiCategories || b.categories || []).map(c => String(c).toLowerCase());
-      const allMatch = includeApiLists.every(list =>
-        list.some(api => cats.some(c => c.includes(api.toLowerCase())))
-      );
-      if (!allMatch) return false;
-    }
-
-    // Filtro de categoria (excluir)
-    if (excludeApiLists.length) {
-      const cats = (b.apiCategories || b.categories || []).map(c => String(c).toLowerCase());
-      const anyExcluded = excludeApiLists.some(list =>
-        list.some(api => cats.some(c => c.includes(api.toLowerCase())))
-      );
-      if (anyExcluded) return false;
-    }
-
     return true;
   });
 }
-
 /* ================= render ================= */
 function renderBooks(items) {
   if (!dom.booksContainer) return;

@@ -1178,10 +1178,44 @@ app.get('/api/books/novos', async (req, res) => {
 
 app.get('/api/books/search', async (req, res) => {
   try {
-    const q          = String(req.query.q || 'subject:fiction');
+    let q            = String(req.query.q || 'subject:fiction');
     const maxResults = String(req.query.maxResults || '24');
     const orderBy    = String(req.query.orderBy || 'relevance');
     const startIndex = req.query.startIndex ? String(req.query.startIndex) : null;
+
+    // 🔥 Filtros injetados na query do Google Books
+    const year        = String(req.query.year || '').trim();
+    const author      = String(req.query.author || '').trim();
+    const includeCats = String(req.query.includeCategories || '').trim();
+    const excludeCats = String(req.query.excludeCategories || '').trim();
+
+    // Ano: publishedDate:2020
+    if (year && /^\d{4}$/.test(year)) {
+      q += `+publishedDate:${year}`;
+    }
+
+    // Autor: inauthor:Rowling
+    if (author && !q.includes('inauthor:')) {
+      q += `+inauthor:${author}`;
+    }
+
+    // Gêneros a incluir
+    if (includeCats) {
+      const cats = includeCats.split('|').map(c => c.trim()).filter(Boolean);
+      cats.forEach(cat => {
+        q += `+subject:${cat}`;
+      });
+    }
+
+    // Gêneros a excluir
+    if (excludeCats) {
+      const cats = excludeCats.split('|').map(c => c.trim()).filter(Boolean);
+      cats.forEach(cat => {
+        q += `+-subject:${cat}`;
+      });
+    }
+
+    console.log('[Google Books] Query final:', q);
 
     const url = new URL(GOOGLE_BOOKS_BASE);
     url.searchParams.set('q', q);
