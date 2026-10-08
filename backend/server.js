@@ -627,7 +627,34 @@ app.post('/api/cadastro', async (req, res) => {
     if (!termos || !regras) {
       return res.status(400).json({ mensagem: 'Você precisa aceitar os Termos e as Regras da comunidade.' });
     }
+    // Validação de data de nascimento
+    if (!nascimento) {
+      return res.status(400).json({ mensagem: 'Data de nascimento é obrigatória.' });
+    }
 
+    const dataNasc = new Date(nascimento);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0); // zera horas para comparar só a data
+
+    if (isNaN(dataNasc.getTime())) {
+      return res.status(400).json({ mensagem: 'Data de nascimento inválida.' });
+    }
+
+    if (dataNasc > hoje) {
+      return res.status(400).json({ mensagem: 'Data de nascimento não pode ser no futuro.' });
+    }
+
+    // Calcula a idade
+    let idade = hoje.getFullYear() - dataNasc.getFullYear();
+    const mesAtual = hoje.getMonth();
+    const mesNasc = dataNasc.getMonth();
+    if (mesAtual < mesNasc || (mesAtual === mesNasc && hoje.getDate() < dataNasc.getDate())) {
+      idade--;
+    }
+
+    if (idade < 12) {
+      return res.status(403).json({ mensagem: 'Você precisa ter pelo menos 12 anos para se cadastrar.' });
+    }
     // Validação do canal escolhido
     const canal = canalVerificacao === 'sms' ? 'sms' : 'email';
     if (canal === 'sms' && !telefone) {
@@ -721,7 +748,10 @@ app.post('/api/login', async (req, res) => {
 
     const ok = await usuario.compararSenha(senha);
     if (!ok) {
-      return res.status(400).json({ mensagem: 'Senha incorreta!' });
+      return res.status(400).json({
+        mensagem: 'Senha incorreta!',
+        dicaSenha: usuario.perguntaSenha || null
+      });
     }
 
     req.login(usuario, (err) => {
@@ -947,7 +977,32 @@ app.post('/api/completar', async (req, res) => {
     const usuario = await User.findById(req.user._id);
     if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado!' });
 
-    if (nascimento) usuario.nascimento = new Date(nascimento);
+    // Validação de data de nascimento
+    if (nascimento) {
+      const dataNasc = new Date(nascimento);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+
+      if (isNaN(dataNasc.getTime())) {
+        return res.status(400).json({ mensagem: 'Data de nascimento inválida.' });
+      }
+      if (dataNasc > hoje) {
+        return res.status(400).json({ mensagem: 'Data de nascimento não pode ser no futuro.' });
+      }
+
+      let idade = hoje.getFullYear() - dataNasc.getFullYear();
+      const mesAtual = hoje.getMonth();
+      const mesNasc = dataNasc.getMonth();
+      if (mesAtual < mesNasc || (mesAtual === mesNasc && hoje.getDate() < dataNasc.getDate())) {
+        idade--;
+      }
+
+      if (idade < 12) {
+        return res.status(403).json({ mensagem: 'Você precisa ter pelo menos 12 anos para se cadastrar.' });
+      }
+
+      usuario.nascimento = dataNasc;
+    }    if (nascimento) usuario.nascimento = new Date(nascimento);
 
     if (senha) {
       if (senha.length < 6) {

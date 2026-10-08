@@ -22,6 +22,31 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
   if (email !== confirmarEmail) {
     return alert('Os e-mails não coincidem!');
   }
+    // Validação de data de nascimento
+  if (!nascimento) {
+    return alert('Informe sua data de nascimento.');
+  }
+
+  const dataNasc = new Date(nascimento);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  if (isNaN(dataNasc.getTime())) {
+    return alert('Data de nascimento inválida.');
+  }
+  if (dataNasc > hoje) {
+    return alert('A data de nascimento não pode ser no futuro.');
+  }
+
+  let idade = hoje.getFullYear() - dataNasc.getFullYear();
+  const mesAtual = hoje.getMonth();
+  const mesNasc = dataNasc.getMonth();
+  if (mesAtual < mesNasc || (mesAtual === mesNasc && hoje.getDate() < dataNasc.getDate())) {
+    idade--;
+  }
+  if (idade < 12) {
+    return alert('Você precisa ter pelo menos 12 anos para se cadastrar.');
+  }
   if (senha !== confirmarSenha) {
     return alert('As senhas não coincidem!');
   }

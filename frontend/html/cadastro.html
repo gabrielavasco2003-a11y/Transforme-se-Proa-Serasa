@@ -131,7 +131,19 @@
                 </div>
 
                 <label>Data de nascimento</label>
-                <input type="date" name="nascimento" required>
+                <input type="date" name="nascimento" required max="2013-12-31" id="dataNascimento">
+                <small style="color:#666;font-size:12px;">Você precisa ter pelo menos 12 anos.</small>
+
+                <script>
+                  // Define o max dinamicamente para hoje e o min para 100 anos atrás
+                  document.addEventListener('DOMContentLoaded', () => {
+                    const inp = document.getElementById('dataNascimento');
+                    if (!inp) return;
+                    const hoje = new Date();
+                    const maxDate = hoje.toISOString().split('T')[0];
+                    inp.max = maxDate;
+                  });
+                </script>
 
                 <label>Senha</label>
                 <input type="password" name="senha" required>

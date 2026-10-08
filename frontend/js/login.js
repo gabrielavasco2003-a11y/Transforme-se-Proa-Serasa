@@ -14,13 +14,22 @@ document.getElementById('loginForm').addEventListener('submit', async function (
       body: JSON.stringify({ email, senha })
     });
     const data = await response.json();
-    alert(data.mensagem);
 
-    if (response.ok) {
-      localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
-      if (window.OfflineDB) await window.OfflineDB.salvarUsuario(data.usuario);
-      window.location.href = '/perfil';
+    if (!response.ok) {
+      // Se a senha está errada E existe dica, mostra
+      if (data.dicaSenha) {
+        alert(`Senha incorreta!\n\n💡 Dica de senha: ${data.dicaSenha}`);
+      } else {
+        alert(data.mensagem);
+      }
+      return;
     }
+
+    // Login OK
+    alert(data.mensagem);
+    localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
+    if (window.OfflineDB) await window.OfflineDB.salvarUsuario(data.usuario);
+    window.location.href = '/perfil';
   } catch (err) {
     console.error(err);
     // Modo offline → tenta login local
