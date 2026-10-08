@@ -178,17 +178,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('codigoTelefoneForm');
     form.addEventListener('submit', (e) => { e.preventDefault(); window.validarCodigoTelefone(); });
 
-    iniciarTimer(30, async () => {
+    // Função de reenvio (declarada antes para poder se chamar recursivamente)
+    const reenviarCodigo = async () => {
       const telefone = sessionStorage.getItem('validarTelefone');
-      if (!telefone) return alert('Sessão expirada. Informe o telefone novamente.');
+      if (!telefone) {
+        alert('Sessão expirada. Informe o telefone novamente.');
+        return location.href = 'validar-telefone.html';
+      }
+
       const { ok, data } = await postJSON('/api/validar-telefone/enviar', { telefone });
+
       if (ok) {
         alert('Novo código enviado!');
         pegarInputsCodigo().forEach(i => i.value = '');
-        iniciarTimer(30, arguments.callee);
+        iniciarTimer(30, reenviarCodigo); // ✅ recursão correta
       } else {
         alert(data.mensagem || 'Erro ao reenviar.');
       }
-    });
+    };
+
+    iniciarTimer(30, reenviarCodigo);
   }
 });
