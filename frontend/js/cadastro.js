@@ -1,46 +1,30 @@
-document.getElementById('cadastroForm').addEventListener('submit', async function (event) {
+/* =========================================================================
+   completar.js — Completar cadastro (usuários que entraram com Google)
+   Fluxo: preenche form → POST /api/completar → envia SMS → valida telefone
+   ========================================================================= */
+
+document.getElementById('completarForm').addEventListener('submit', async function (event) {
   event.preventDefault();
 
-  const nome            = document.querySelector("[name='nome']").value.trim();
-  const usuario         = document.querySelector("[name='usuario']").value.trim();
-  const email           = document.querySelector("[name='email']").value.trim();
-  const confirmarEmail  = document.querySelector("[name='confirmarEmail']").value.trim();
-  const senha           = document.querySelector("[name='senha']").value;
-  const confirmarSenha  = document.querySelector("[name='confirmarSenha']").value;
-  const telefone        = document.querySelector("[name='telefone']").value;
-  const nascimento      = document.querySelector("[name='nascimento']").value;
-  const perguntaSenha   = document.querySelector("[name='perguntaSenha']")?.value.trim() || '';
+  // ---------- 1. Captura dos campos ----------
+  const telefone   = document.querySelector("[name='telefone']").value.trim();
+  const nascimento = document.querySelector("[name='nascimento']").value;
+  const senha      = document.querySelector("[name='senha']").value;
 
-  // --- Validações básicas ---
-  if (email !== confirmarEmail) return alert('Os e-mails não coincidem!');
-  if (senha !== confirmarSenha) return alert('As senhas não coincidem!');
-  if (senha.length < 6)         return alert('A senha deve ter ao menos 6 caracteres.');
+  // ---------- 2. Validação básica ----------
+  if (!telefone) return alert('Informe seu telefone.');
+  const digits = telefone.replace(/\D/g, '');
+  if (digits.length < 10) return alert('Telefone inválido. Use DDD + número.');
 
-  // --- Validação das caixas de concordância ---
-  const termosMarcado    = document.getElementById('termos')?.checked    || false;
-  const regrasMarcado    = document.getElementById('regras')?.checked    || false;
-  const marketingMarcado = document.getElementById('marketing')?.checked || false;
+  if (!nascimento) return alert('Informe sua data de nascimento.');
+  if (senha.length < 6) return alert('A senha deve ter ao menos 6 caracteres.');
 
-  if (!termosMarcado || !regrasMarcado) {
-    return alert('Você precisa aceitar os Termos e Condições e as Regras da comunidade para se cadastrar.');
-  }
+  // ---------- 3. Payload (campo "senha", não "senhaHash") ----------
+  const payload = { telefone, nascimento, senha };
 
-  // --- Payload correto (campo "senha", não "senhaHash") ---
-  const payload = {
-    nome,
-    usuario,
-    email,
-    senha,
-    telefone,
-    nascimento,
-    perguntaSenha,
-    termos:    termosMarcado,
-    regras:    regrasMarcado,
-    marketing: marketingMarcado
-  };
-
+  // ---------- 4. Envia para o backend ----------
   try {
-    const response = await fetch('/api/cadastro', {
+    const response = await fetch('/api/completar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -48,24 +32,32 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
     });
 
     const data = await response.json();
-    alert(data.mensagem);
 
+    // Sessão expirada
+    if (response.status === 401) {
+      alert('Sessão expirada. Faça login novamente.');
+      return (window.location.href = '/login.html');
+    }
+
+    alert(data.mensagem);
     if (!response.ok) return;
 
-    const user = data.usuario || payload;
-    localStorage.setItem('usuarioLogado', JSON.stringify(user));
-    if (window.OfflineDB) await window.OfflineDB.salvarUsuario(user);
-    window.location.href = '/perfil';
+    // ---------- 5. Salva usuário localmente ----------
+    if (data.usuario) {
+      localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
+      if (window.OfflineDB) await window.OfflineDB.salvarUsuario(data.usuario);
+    }
+
+    // ---------- 6. Redireciona para validação de telefone ----------
+    sessionStorage.setItem('validarTelefone', telefone);
+    window.location.href = '/validar-codigo.html';
 
   } catch (err) {
-    // Offline → salva localmente e enfileira
+    // ---------- 7. Modo offline ----------
     console.error(err);
-    localStorage.setItem('usuarioLogado', JSON.stringify(payload));
-
     if (window.OfflineDB) {
-      await window.OfflineDB.salvarUsuario(payload);
       await window.OfflineDB.enfileirarRequisicao({
-        url: '/api/cadastro',
+        url: '/api/completar',
         options: {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -73,13 +65,7 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
         }
       });
     }
-
-    alert('Você está offline. Cadastro será sincronizado ao voltar a conexão.');
+    alert('Offline: dados serão enviados quando a conexão voltar.');
     window.location.href = '/perfil';
   }
 });
-
-// ✅ Login com Google
-function loginGoogle() {
-  window.location.href = '/api/google';
-}
