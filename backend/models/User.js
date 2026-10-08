@@ -25,11 +25,9 @@ const userSchema = new mongoose.Schema({
 
   // --- Status da conta (só fica true após validar o telefone) ---
   contaAtiva: { type: Boolean, default: false },
-// --- Status da conta (só fica true após validar o telefone) ---
-contaAtiva: { type: Boolean, default: false },
+
   // --- Avatar ---
   avatar: { type: String, default: '/img/perfil/1.png' },
-
   // --- Configurações ---
   config: {
     language:   { type: String, default: 'pt-BR' },

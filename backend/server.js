@@ -587,21 +587,45 @@ app.post('/api/cadastro', async (req, res) => {
       nome,
       usuario,
       email,
-      senha, // ← hook pre('save') faz hash
+      senha,
       telefone,
       nascimento: nascimento ? new Date(nascimento) : undefined,
       perguntaSenha: perguntaSenha || '',
       termos:    !!termos,
       regras:    !!regras,
-      marketing: !!marketing
+      marketing: !!marketing,
+      contaAtiva: false
     });
 
     await novo.save();
 
-    // 📧 Dispara e-mail de boas-vindas (não bloqueia a resposta)
-    enviarEmailBoasVindas(novo).catch(err =>
-      console.error('Falha ao enviar boas-vindas:', err.message)
-    );
+    // 📱 Envia SMS de verificação
+    try {
+      const e164 = normalizarTelefone(telefone);
+      if (e164 && e164.length >= 12) {
+        const codigo = gerarCodigo5();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        await PhoneVerification.deleteMany({ userId: novo._id });
+        await PhoneVerification.create({
+          userId: novo._id,
+          telefone: e164,
+          codigo,
+          expiresAt
+        });
+
+        novo.telefone = e164;
+        await novo.save();
+
+        await enviarSMSCodigo(e164, codigo);
+      } else {
+        console.warn('Telefone inválido ou não informado, SMS não enviado.');
+      }
+    } catch (smsErr) {
+      console.error('Falha ao enviar SMS de verificação:', smsErr.message);
+    }
+
+    // ⚠️ E-mail de boas-vindas NÃO é enviado aqui.
 
     req.login(novo, (err) => {
       if (err) {
@@ -609,16 +633,19 @@ app.post('/api/cadastro', async (req, res) => {
       }
       req.session.save(() => {
         res.status(201).json({
-          mensagem: 'Usuário cadastrado com sucesso!',
-          usuario: sanitize(novo)
+          mensagem: 'Usuário cadastrado! Verifique seu telefone para ativar a conta.',
+          usuario: sanitize(novo),
+          precisaValidarTelefone: true
         });
       });
     });
+
   } catch (err) {
     console.error('Erro em /api/cadastro:', err);
     res.status(500).json({ mensagem: 'Erro ao cadastrar usuário.' });
   }
 });
+
 // ---------- API: LOGIN ----------
 app.post('/api/login', async (req, res) => {
   const { email, senha } = req.body;
@@ -862,25 +889,59 @@ app.post('/api/completar', async (req, res) => {
     const usuario = await User.findById(req.user._id);
     if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado!' });
 
-    if (telefone)   usuario.telefone = telefone;
     if (nascimento) usuario.nascimento = new Date(nascimento);
 
     if (senha) {
       if (senha.length < 6) {
         return res.status(400).json({ mensagem: 'A senha deve ter ao menos 6 caracteres.' });
       }
-      usuario.senha = senha; // ← hook faz hash
+      usuario.senha = senha;
     }
 
     usuario.precisaCompletarPerfil = false;
+    usuario.contaAtiva = false;
     await usuario.save();
 
-    res.json({ mensagem: 'Cadastro completado com sucesso!', usuario: sanitize(usuario) });
+    // 📱 Envia SMS de verificação
+    let smsEnviado = false;
+    if (telefone) {
+      try {
+        const e164 = normalizarTelefone(telefone);
+        if (e164 && e164.length >= 12) {
+          const codigo = gerarCodigo5();
+          const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+          await PhoneVerification.deleteMany({ userId: usuario._id });
+          await PhoneVerification.create({
+            userId: usuario._id,
+            telefone: e164,
+            codigo,
+            expiresAt
+          });
+
+          usuario.telefone = e164;
+          await usuario.save();
+
+          await enviarSMSCodigo(e164, codigo);
+          smsEnviado = true;
+        }
+      } catch (smsErr) {
+        console.error('Falha ao enviar SMS em /api/completar:', smsErr.message);
+      }
+    }
+
+    res.json({
+      mensagem: 'Cadastro completado! Verifique seu telefone para ativar a conta.',
+      usuario: sanitize(usuario),
+      precisaValidarTelefone: !!smsEnviado
+    });
+
   } catch (err) {
     console.error('Erro em /api/completar:', err);
     res.status(500).json({ mensagem: 'Erro ao completar cadastro.' });
   }
 });
+
 // ---------- API: CATEGORIES ----------
 app.get('/api/categories', (req, res) => {
   const candidates = [
