@@ -1,7 +1,8 @@
 /* busca.js - busca em tempo real + filtros + tradução de categorias
    + redirecionamento para book.html
    + leitura do parâmetro ?q= vindo do index.html
-   + proxy via backend (/api/books/search) — a chave NÃO fica no front */
+   + proxy via backend (/api/books/search) — a chave NÃO fica no front
+   + filtros funcionam mesmo sem pesquisa (na tela de descoberta) */
 
 const API_BASE = "/api/books/search";
 const CATEGORIES_URL = "/data/categories.json";
@@ -162,7 +163,7 @@ async function fetchCommunityBooks(q) {
   }
 }
 
-/* ================= normalização (não filtra mais) ================= */
+/* ================= normalização (não filtra) ================= */
 function filterAndNormalize(items) {
   if (!items) return [];
 
@@ -320,7 +321,7 @@ document.addEventListener("click", (e) => {
     state.excludeCategories = state.excludeCategories.filter(c => c !== cat);
   }
   renderCategoryLists();
-  performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
+  reloadWithFilters();
 });
 
 /* ================= sugestões ================= */
@@ -335,7 +336,7 @@ function showSuggestions(container, items) {
       if (container === dom.categorySuggestions) addCategory(i, "include");
       else addCategory(i, "exclude");
       container.hidden = true;
-      performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
+      reloadWithFilters();
     });
     container.appendChild(div);
   });
@@ -365,7 +366,7 @@ if (dom.ratingFilter) {
       b.setAttribute("aria-pressed", active ? "true" : "false");
     });
 
-    performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
+    reloadWithFilters();
   });
 }
 
@@ -395,7 +396,7 @@ if (dom.addCategoryBtn) {
     addCategory(dom.categorySearch ? dom.categorySearch.value : "", "include");
     if (dom.categorySearch) dom.categorySearch.value = "";
     if (dom.categorySuggestions) dom.categorySuggestions.hidden = true;
-    performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
+    reloadWithFilters();
   });
 }
 
@@ -404,7 +405,7 @@ if (dom.addExcludeBtn) {
     addCategory(dom.excludeSearch ? dom.excludeSearch.value : "", "exclude");
     if (dom.excludeSearch) dom.excludeSearch.value = "";
     if (dom.excludeSuggestions) dom.excludeSuggestions.hidden = true;
-    performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
+    reloadWithFilters();
   });
 }
 
@@ -413,7 +414,7 @@ if (dom.applyFiltersBtn) {
   dom.applyFiltersBtn.addEventListener("click", () => {
     state.author = dom.authorFilter ? dom.authorFilter.value.trim() : "";
     state.year = dom.yearFilter && dom.yearFilter.value ? String(dom.yearFilter.value) : "";
-    performSearch(state.query || (dom.searchInput ? dom.searchInput.value : "") || "");
+    reloadWithFilters();
   });
 }
 
@@ -435,7 +436,7 @@ if (dom.clearFiltersBtn) {
         b.setAttribute("aria-pressed", "false");
       });
     }
-    performSearch("");
+    reloadWithFilters();
   });
 }
 
@@ -455,6 +456,19 @@ if (dom.searchInput) {
     state.query = q;
     performSearch(q);
   }, 450));
+}
+
+/* ================= recarregar com filtros ================= */
+/* Decide se é busca ou descoberta, e aplica os filtros */
+function reloadWithFilters() {
+  const q = state.query || (dom.searchInput ? dom.searchInput.value.trim() : "");
+  if (!q) {
+    // Sem busca → recarrega a lista inicial de descoberta
+    initialLoad();
+  } else {
+    // Com busca → refaz a busca com filtros
+    performSearch(q);
+  }
 }
 
 /* ================= busca principal ================= */
@@ -532,30 +546,47 @@ function updateTopCategory(items) {
   if (dom.topCategoryName) dom.topCategoryName.textContent = top;
 }
 
-/* ================= initial load (sugestões) ================= */
+/* ================= initial load (descoberta) ================= */
 async function initialLoad() {
   if (dom.resultsTitle) dom.resultsTitle.textContent = "Melhores Avaliados";
-  if (dom.topCategoryName) dom.topCategoryName.textContent = "—";
   if (dom.loading) dom.loading.hidden = false;
 
   try {
-    const res = await fetchBooksRaw("subject:fiction", { maxResults: 30, orderBy: "relevance" });
-    const items = res.items || [];
+    // 1) Busca sugestões da Google Books + catálogo comunitário
+    const [raw, community] = await Promise.all([
+      fetchBooksRaw("subject:fiction", { maxResults: 30, orderBy: "relevance" }).catch(() => ({ items: [] })),
+      fetchCommunityBooks("")
+    ]);
+
+    const items = raw.items || [];
     updateTopCategory(items);
 
+    // 2) Normaliza Google Books
     const normalizados = filterAndNormalize(items);
 
-    const ids = normalizados.map(b => b.id).filter(Boolean);
+    // 3) Junta comunitários (sem duplicar)
+    const idsGoogle = new Set(normalizados.map(b => b.id));
+    const comunitarios = community.filter(b => !idsGoogle.has(b.id));
+
+    const todos = [...normalizados, ...comunitarios];
+
+    // 4) Notas reais do banco
+    const ids = todos.map(b => b.id).filter(Boolean);
     const ratings = await fetchRatingsBatch(ids);
 
-    normalizados.forEach(b => {
+    todos.forEach(b => {
       const r = ratings[b.id];
       b.rating = r ? r.media : 0;
       b.ratingsCount = r ? r.total : 0;
     });
 
-    const sorted = normalizados.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    renderBooks(sorted.slice(0, 12));
+    // 5) Ordena por nota real
+    const sorted = todos.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+    // 6) ⚡ APLICA OS FILTROS TAMBÉM AQUI
+    const filtrados = applyAllFilters(sorted);
+
+    renderBooks(filtrados.slice(0, 24));
   } catch (err) {
     console.error(err);
     if (dom.noResults) {
@@ -615,3 +646,4 @@ function getQueryFromURL() {
 /* expor pro console (debug) */
 window.performSearch = performSearch;
 window.state = state;
+window.reloadWithFilters = reloadWithFilters;
