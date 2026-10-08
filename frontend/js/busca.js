@@ -46,8 +46,8 @@ const state = {
 };
 
 /* ================= MAPA DE CATEGORIAS ================= */
-let categoryMap = {}; // { "Fantasia": ["Fantasy", ...] }
-let reverseMap = {};  // { "fantasy": "Fantasia" }
+let categoryMap = {};
+let reverseMap = {};
 
 async function loadCategoryMap() {
   try {
@@ -73,7 +73,6 @@ function rebuildReverseMap() {
   });
 }
 
-/* API (inglês) → exibição (português). Retorna null se não mapeada. */
 function toDisplayCategory(apiCat) {
   if (!apiCat) return null;
   const key = String(apiCat).toLowerCase().trim();
@@ -82,7 +81,6 @@ function toDisplayCategory(apiCat) {
   return hit ? reverseMap[hit] : null;
 }
 
-/* Exibição (português) → lista da API (inglês) para o filtro */
 function toApiCategoryList(displayCat) {
   if (!displayCat) return [];
   const trimmed = displayCat.trim();
@@ -121,6 +119,7 @@ async function fetchBooksRaw(q, params = {}) {
 
   return res.json();
 }
+
 /* ================= notas em lote (nosso banco) ================= */
 async function fetchRatingsBatch(volumeIds) {
   if (!volumeIds || !volumeIds.length) return {};
@@ -151,7 +150,8 @@ async function fetchCommunityBooks(q) {
       authors: item.authors || [],
       year: item.publishedDate ? String(item.publishedDate).split('-')[0] : 'Desconhecido',
       categories: item.categories || [],
-      rating: 0, // será preenchido depois
+      apiCategories: item.categories || [],
+      rating: 0,
       thumbnail: item.thumbnail || '',
       description: item.description || '',
       manual: true
@@ -161,48 +161,12 @@ async function fetchCommunityBooks(q) {
     return [];
   }
 }
-/* ================= filtro + normalização ================= */
+
+/* ================= normalização (não filtra mais) ================= */
 function filterAndNormalize(items) {
   if (!items) return [];
 
-  const includeApiLists = state.includeCategories.map(toApiCategoryList);
-  const excludeApiLists = state.excludeCategories.map(toApiCategoryList);
-
-  const filtered = items.filter(item => {
-    const info = item.volumeInfo || {};
-
-    if (state.rating && ((info.averageRating || 0) < state.rating)) return false;
-
-    if (state.author) {
-      const authors = (info.authors || []).join(" ").toLowerCase();
-      if (!authors.includes(state.author.toLowerCase())) return false;
-    }
-
-    if (state.year) {
-      const year = info.publishedDate ? info.publishedDate.split("-")[0] : "";
-      if (year !== String(state.year)) return false;
-    }
-
-    const apiCats = (info.categories || []).map(c => c.toLowerCase());
-
-    if (includeApiLists.length) {
-      const allMatch = includeApiLists.every(list =>
-        list.some(api => apiCats.some(c => c.includes(api.toLowerCase())))
-      );
-      if (!allMatch) return false;
-    }
-
-    if (excludeApiLists.length) {
-      const anyExcluded = excludeApiLists.some(list =>
-        list.some(api => apiCats.some(c => c.includes(api.toLowerCase())))
-      );
-      if (anyExcluded) return false;
-    }
-
-    return true;
-  });
-
-  return filtered.map(item => {
+  return items.map(item => {
     const info = item.volumeInfo || {};
     const displayCats = Array.from(new Set(
       (info.categories || []).map(toDisplayCategory).filter(Boolean)
@@ -214,10 +178,51 @@ function filterAndNormalize(items) {
       authors: info.authors || [],
       year: info.publishedDate ? info.publishedDate.split("-")[0] : "Desconhecido",
       categories: displayCats,
+      apiCategories: info.categories || [],
       rating: info.averageRating || 0,
       thumbnail: info.imageLinks?.thumbnail?.replace("http://", "https://") || "",
       description: info.description || ""
     };
+  });
+}
+
+/* ================= aplicar TODOS os filtros ================= */
+function applyAllFilters(books) {
+  const includeApiLists = state.includeCategories.map(toApiCategoryList);
+  const excludeApiLists = state.excludeCategories.map(toApiCategoryList);
+
+  return books.filter(b => {
+    // Filtro de avaliação (nota do banco é 0-10; filtro em estrelas 0-5)
+    if (state.rating && ((b.rating || 0) / 2) < state.rating) return false;
+
+    // Filtro de autor
+    if (state.author) {
+      const authors = (b.authors || []).join(" ").toLowerCase();
+      if (!authors.includes(state.author.toLowerCase())) return false;
+    }
+
+    // Filtro de ano
+    if (state.year && String(b.year) !== String(state.year)) return false;
+
+    // Filtro de gênero (incluir)
+    if (includeApiLists.length) {
+      const cats = (b.apiCategories || b.categories || []).map(c => String(c).toLowerCase());
+      const allMatch = includeApiLists.every(list =>
+        list.some(api => cats.some(c => c.includes(api.toLowerCase())))
+      );
+      if (!allMatch) return false;
+    }
+
+    // Filtro de categoria (excluir)
+    if (excludeApiLists.length) {
+      const cats = (b.apiCategories || b.categories || []).map(c => String(c).toLowerCase());
+      const anyExcluded = excludeApiLists.some(list =>
+        list.some(api => cats.some(c => c.includes(api.toLowerCase())))
+      );
+      if (anyExcluded) return false;
+    }
+
+    return true;
   });
 }
 
@@ -259,9 +264,7 @@ function renderBooks(items) {
 
 /* ================= helpers ================= */
 function renderStars(rating) {
-  // Nota do nosso banco é 0-10; converter para 0-5
   let r = Math.round((rating || 0) / 2);
-  // Blindagem: garante que r está entre 0 e 5
   r = Math.max(0, Math.min(5, r));
   return "★".repeat(r) + "☆".repeat(5 - r);
 }
@@ -306,7 +309,6 @@ function addCategory(cat, type = "include") {
   renderCategoryLists();
 }
 
-/* remover categoria via delegacão de evento */
 document.addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-cat]");
   if (!btn) return;
@@ -499,12 +501,8 @@ async function performSearch(query) {
       }
     });
 
-    // 6) Aplica filtro de avaliação (agora com notas REAIS)
-    const filtrados = todos.filter(b => {
-      // Nota do nosso banco é 0-10; o filtro está em estrelas (0-5)
-if (state.rating && ((b.rating || 0) / 2) < state.rating) return false;
-      return true;
-    });
+    // 6) Aplica TODOS os filtros
+    const filtrados = applyAllFilters(todos);
 
     renderBooks(filtrados);
   } catch (err) {
@@ -518,6 +516,7 @@ if (state.rating && ((b.rating || 0) / 2) < state.rating) return false;
     if (dom.loading) dom.loading.hidden = true;
   }
 }
+
 /* ================= top category (traduzida) ================= */
 function updateTopCategory(items) {
   const counts = {};
@@ -546,7 +545,6 @@ async function initialLoad() {
 
     const normalizados = filterAndNormalize(items);
 
-    // Busca notas REAIS do nosso banco
     const ids = normalizados.map(b => b.id).filter(Boolean);
     const ratings = await fetchRatingsBatch(ids);
 
@@ -556,7 +554,6 @@ async function initialLoad() {
       b.ratingsCount = r ? r.total : 0;
     });
 
-    // Ordena por nota real (do nosso banco)
     const sorted = normalizados.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0));
     renderBooks(sorted.slice(0, 12));
   } catch (err) {
