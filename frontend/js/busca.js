@@ -259,7 +259,10 @@ function renderBooks(items) {
 
 /* ================= helpers ================= */
 function renderStars(rating) {
-  const r = Math.round(rating);
+  // Nota do nosso banco é 0-10; converter para 0-5
+  let r = Math.round((rating || 0) / 2);
+  // Blindagem: garante que r está entre 0 e 5
+  r = Math.max(0, Math.min(5, r));
   return "★".repeat(r) + "☆".repeat(5 - r);
 }
 function truncate(text, n) {
@@ -498,7 +501,8 @@ async function performSearch(query) {
 
     // 6) Aplica filtro de avaliação (agora com notas REAIS)
     const filtrados = todos.filter(b => {
-      if (state.rating && (b.rating || 0) < state.rating) return false;
+      // Nota do nosso banco é 0-10; o filtro está em estrelas (0-5)
+if (state.rating && ((b.rating || 0) / 2) < state.rating) return false;
       return true;
     });
 
