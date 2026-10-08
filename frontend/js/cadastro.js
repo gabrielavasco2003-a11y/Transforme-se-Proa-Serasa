@@ -16,6 +16,7 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
   const telefone       = document.querySelector("[name='telefone']").value.trim();
   const nascimento     = document.querySelector("[name='nascimento']").value;
   const perguntaSenha  = document.querySelector("[name='perguntaSenha']")?.value.trim() || '';
+    const canalVerificacao = document.querySelector("[name='canalVerificacao']:checked")?.value || 'email';
 
   // ---------- 2. Validações básicas ----------
   if (email !== confirmarEmail) {
@@ -48,9 +49,9 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
     perguntaSenha,
     termos:    termosMarcado,
     regras:    regrasMarcado,
-    marketing: marketingMarcado
+    marketing: marketingMarcado,
+    canalVerificacao
   };
-
   // ---------- 5. Envia para o backend ----------
   try {
     const response = await fetch('/api/cadastro', {
@@ -73,6 +74,7 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
     // ---------- 7. Redireciona para validação de telefone ----------
     if (data.precisaValidarTelefone) {
       sessionStorage.setItem('validarTelefone', telefone);
+      sessionStorage.setItem('canalVerificacao', data.canalVerificacao || canalVerificacao);
       window.location.href = '/validar-codigo.html';
     } else {
       window.location.href = '/perfil';

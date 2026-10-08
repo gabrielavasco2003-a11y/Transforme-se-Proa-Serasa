@@ -330,7 +330,7 @@ async function enviarEmailCodigo(destino, codigo) {
 
 async function enviarSMSCodigo(telefoneE164, codigo) {
   try {
-    const resp = await fetch('https://api.stackverify.com/v1/sms', {
+    const resp = await fetch('https://stackverify.site/api/v1/sms/send', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${SMS_API_TOKEN}`,
@@ -338,18 +338,51 @@ async function enviarSMSCodigo(telefoneE164, codigo) {
         'Accept': 'application/json'
       },
       body: JSON.stringify({
-        to: telefoneE164,
-        message: `Spoiler Esperado: seu código é ${codigo}. Expira em 10 minutos.`
+        recipients: [telefoneE164],
+        body: `Spoiler Esperado: seu código é ${codigo}. Expira em 10 minutos.`,
+        sender_id: 'SpoilerEsp'
       })
     });
+
     if (!resp.ok) {
       const erro = await resp.text();
       console.error('StackVerify erro:', resp.status, erro);
       throw new Error('Falha ao enviar SMS');
     }
+
+    console.log(`[SMS] Código enviado para ${telefoneE164}: ${codigo}`);
     return true;
   } catch (err) {
-    console.error('Erro no envio de SMS:', err);
+    console.error('Erro no envio de SMS:', err.message);
+    console.log(`[SMS-FALLBACK] Código para ${telefoneE164}: ${codigo}`);
+    return false;
+  }
+}async function enviarSMSCodigo(telefoneE164, codigo) {
+  try {
+    const resp = await fetch('https://stackverify.site/api/v1/sms/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SMS_API_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        recipients: [telefoneE164],
+        body: `Spoiler Esperado: seu código é ${codigo}. Expira em 10 minutos.`,
+        sender_id: 'SpoilerEsp'
+      })
+    });
+
+    if (!resp.ok) {
+      const erro = await resp.text();
+      console.error('StackVerify erro:', resp.status, erro);
+      throw new Error('Falha ao enviar SMS');
+    }
+
+    console.log(`[SMS] Código enviado para ${telefoneE164}: ${codigo}`);
+    return true;
+  } catch (err) {
+    console.error('Erro no envio de SMS:', err.message);
     console.log(`[SMS-FALLBACK] Código para ${telefoneE164}: ${codigo}`);
     return false;
   }
@@ -494,7 +527,6 @@ app.post('/api/recuperar/redefinir', async (req, res) => {
   }
 });
 
-// ================================================================
 // ============ ROTAS: VALIDAÇÃO DE TELEFONE ======================
 // ================================================================
 app.post('/api/validar-telefone/enviar', async (req, res) => {
@@ -523,25 +555,42 @@ app.post('/api/validar-telefone/validar', async (req, res) => {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { codigo } = req.body;
     if (!codigo) return res.status(400).json({ mensagem: 'Código obrigatório.' });
+
     const reg = await PhoneVerification.findOne({ userId: req.user._id, codigo, usado: false });
     if (!reg) return res.status(400).json({ mensagem: 'Código inválido.' });
     if (reg.expiresAt < new Date()) return res.status(400).json({ mensagem: 'Código expirado.' });
+
     reg.usado = true;
     await reg.save();
+
     const u = await User.findById(req.user._id);
     if (u) {
-      u.telefoneVerificado = true;
-      if (reg.telefone) u.telefone = reg.telefone;
+      // Marca o canal correto conforme a escolha
+      if (u.canalVerificacao === 'email') {
+        u.emailVerificado = true;
+      } else {
+        u.telefoneVerificado = true;
+        if (reg.telefone) u.telefone = reg.telefone;
+      }
+      u.contaAtiva = true;
       await u.save();
+
+      // 📧 SÓ AGORA dispara o e-mail de boas-vindas
+      enviarEmailBoasVindas(u).catch(err =>
+        console.error('Falha ao enviar boas-vindas:', err.message)
+      );
     }
-    return res.json({ mensagem: 'Telefone verificado com sucesso!', usuario: u ? sanitize(u) : null });
+
+    return res.json({
+      mensagem: 'Conta ativada com sucesso! Verifique seu e-mail.',
+      usuario: u ? sanitize(u) : null
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ mensagem: 'Erro ao validar código.' });
   }
 });
 
-// ================================================================
 // ============ GOOGLE BOOKS: util ================================
 // ================================================================
 const GOOGLE_BOOKS_BASE = 'https://www.googleapis.com/books/v1/volumes';
@@ -565,7 +614,8 @@ app.post('/api/cadastro', async (req, res) => {
   try {
     const {
       nome, usuario, email, senha, telefone, nascimento,
-      perguntaSenha, termos, regras, marketing
+      perguntaSenha, termos, regras, marketing,
+      canalVerificacao
     } = req.body;
 
     if (!nome || !usuario || !email || !senha) {
@@ -576,6 +626,12 @@ app.post('/api/cadastro', async (req, res) => {
     }
     if (!termos || !regras) {
       return res.status(400).json({ mensagem: 'Você precisa aceitar os Termos e as Regras da comunidade.' });
+    }
+
+    // Validação do canal escolhido
+    const canal = canalVerificacao === 'sms' ? 'sms' : 'email';
+    if (canal === 'sms' && !telefone) {
+      return res.status(400).json({ mensagem: 'Telefone é obrigatório para verificação por SMS.' });
     }
 
     const existente = await User.findOne({ $or: [{ email }, { usuario }] });
@@ -594,38 +650,37 @@ app.post('/api/cadastro', async (req, res) => {
       termos:    !!termos,
       regras:    !!regras,
       marketing: !!marketing,
-      contaAtiva: false
+      contaAtiva: false,
+      canalVerificacao: canal
     });
 
     await novo.save();
 
-    // 📱 Envia SMS de verificação
+    // 📨 Envia código de verificação pelo canal escolhido
     try {
-      const e164 = normalizarTelefone(telefone);
-      if (e164 && e164.length >= 12) {
-        const codigo = gerarCodigo5();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      const codigo = gerarCodigo5();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-        await PhoneVerification.deleteMany({ userId: novo._id });
-        await PhoneVerification.create({
-          userId: novo._id,
-          telefone: e164,
-          codigo,
-          expiresAt
-        });
+      await PhoneVerification.deleteMany({ userId: novo._id });
+      await PhoneVerification.create({
+        userId: novo._id,
+        telefone: telefone ? normalizarTelefone(telefone) : '',
+        codigo,
+        expiresAt
+      });
 
+      if (canal === 'email') {
+        await enviarEmailCodigo(novo.email, codigo);
+        console.log(`[VERIFICACAO-EMAIL] Código para ${novo.email}: ${codigo}`);
+      } else {
+        const e164 = normalizarTelefone(telefone);
         novo.telefone = e164;
         await novo.save();
-
         await enviarSMSCodigo(e164, codigo);
-      } else {
-        console.warn('Telefone inválido ou não informado, SMS não enviado.');
       }
-    } catch (smsErr) {
-      console.error('Falha ao enviar SMS de verificação:', smsErr.message);
+    } catch (envioErr) {
+      console.error('Falha ao enviar código de verificação:', envioErr.message);
     }
-
-    // ⚠️ E-mail de boas-vindas NÃO é enviado aqui.
 
     req.login(novo, (err) => {
       if (err) {
@@ -633,9 +688,12 @@ app.post('/api/cadastro', async (req, res) => {
       }
       req.session.save(() => {
         res.status(201).json({
-          mensagem: 'Usuário cadastrado! Verifique seu telefone para ativar a conta.',
+          mensagem: canal === 'email'
+            ? 'Usuário cadastrado! Verifique seu e-mail para ativar a conta.'
+            : 'Usuário cadastrado! Verifique seu telefone para ativar a conta.',
           usuario: sanitize(novo),
-          precisaValidarTelefone: true
+          precisaValidarTelefone: true,
+          canalVerificacao: canal
         });
       });
     });
@@ -882,7 +940,7 @@ app.get('/api/google/callback',
 );
 // ---------- API: COMPLETAR CADASTRO ----------
 app.post('/api/completar', async (req, res) => {
-  const { telefone, nascimento, senha } = req.body;
+  const { telefone, nascimento, senha, canalVerificacao } = req.body;
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado!' });
 
@@ -898,42 +956,52 @@ app.post('/api/completar', async (req, res) => {
       usuario.senha = senha;
     }
 
+    // Validação do canal escolhido
+    const canal = canalVerificacao === 'sms' ? 'sms' : 'email';
+    if (canal === 'sms' && !telefone) {
+      return res.status(400).json({ mensagem: 'Telefone é obrigatório para verificação por SMS.' });
+    }
+
     usuario.precisaCompletarPerfil = false;
     usuario.contaAtiva = false;
+    usuario.canalVerificacao = canal;
     await usuario.save();
 
-    // 📱 Envia SMS de verificação
-    let smsEnviado = false;
-    if (telefone) {
-      try {
+    // 📨 Envia código de verificação
+    let enviado = false;
+    try {
+      const codigo = gerarCodigo5();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await PhoneVerification.deleteMany({ userId: usuario._id });
+      await PhoneVerification.create({
+        userId: usuario._id,
+        telefone: telefone ? normalizarTelefone(telefone) : '',
+        codigo,
+        expiresAt
+      });
+
+      if (canal === 'email') {
+        await enviarEmailCodigo(usuario.email, codigo);
+        console.log(`[VERIFICACAO-EMAIL] Código para ${usuario.email}: ${codigo}`);
+      } else {
         const e164 = normalizarTelefone(telefone);
-        if (e164 && e164.length >= 12) {
-          const codigo = gerarCodigo5();
-          const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-          await PhoneVerification.deleteMany({ userId: usuario._id });
-          await PhoneVerification.create({
-            userId: usuario._id,
-            telefone: e164,
-            codigo,
-            expiresAt
-          });
-
-          usuario.telefone = e164;
-          await usuario.save();
-
-          await enviarSMSCodigo(e164, codigo);
-          smsEnviado = true;
-        }
-      } catch (smsErr) {
-        console.error('Falha ao enviar SMS em /api/completar:', smsErr.message);
+        usuario.telefone = e164;
+        await usuario.save();
+        await enviarSMSCodigo(e164, codigo);
       }
+      enviado = true;
+    } catch (envioErr) {
+      console.error('Falha ao enviar código em /api/completar:', envioErr.message);
     }
 
     res.json({
-      mensagem: 'Cadastro completado! Verifique seu telefone para ativar a conta.',
+      mensagem: canal === 'email'
+        ? 'Cadastro completado! Verifique seu e-mail para ativar a conta.'
+        : 'Cadastro completado! Verifique seu telefone para ativar a conta.',
       usuario: sanitize(usuario),
-      precisaValidarTelefone: !!smsEnviado
+      precisaValidarTelefone: enviado,
+      canalVerificacao: canal
     });
 
   } catch (err) {

@@ -114,9 +114,21 @@
 
                 <label>Confirmar e-mail</label>
                 <input type="email" name="confirmarEmail" required>
-
+                
                 <label>Telefone</label>
                 <input type="tel" name="telefone">
+
+                <label>Como você prefere verificar sua conta?</label>
+                <div class="canal-verificacao">
+                    <label style="display:inline-block;margin-right:16px;">
+                        <input type="radio" name="canalVerificacao" value="email" checked>
+                        Verificar por E-mail
+                    </label>
+                    <label style="display:inline-block;">
+                        <input type="radio" name="canalVerificacao" value="sms">
+                        Verificar por SMS
+                    </label>
+                </div>
 
                 <label>Data de nascimento</label>
                 <input type="date" name="nascimento" required>
