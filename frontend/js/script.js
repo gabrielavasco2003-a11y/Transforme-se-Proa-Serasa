@@ -109,10 +109,42 @@ async function carregarEmAlta() {
       div.innerHTML = '<p class="vazio">Nenhum livro encontrado.</p>';
       return;
     }
-    data.items.forEach(item => div.appendChild(criarCardLivro(item)));
+
+    // Busca notas reais do nosso banco
+    const ids = data.items.map(i => i.volumeId).filter(Boolean);
+    const ratings = await fetchRatingsBatch(ids);
+
+    data.items.forEach(item => {
+      const r = ratings[item.volumeId];
+      if (r) {
+        item.averageRating = r.media;
+        item.ratingsCount = r.total;
+      } else {
+        item.averageRating = 0;
+        item.ratingsCount = 0;
+      }
+      div.appendChild(criarCardLivro(item));
+    });
   } catch (err) {
     console.error('Erro ao carregar "Em Alta":', err);
     div.innerHTML = '<p class="erro">Não foi possível carregar os livros.</p>';
+  }
+}
+
+// Helper para notas em lote (reaproveitado nas 3 seções)
+async function fetchRatingsBatch(volumeIds) {
+  if (!volumeIds || !volumeIds.length) return {};
+  try {
+    const ids = volumeIds.slice(0, 100).join(',');
+    const res = await fetch(`/api/ratings/batch?ids=${encodeURIComponent(ids)}`, {
+      credentials: 'same-origin'
+    });
+    if (!res.ok) return {};
+    const data = await res.json();
+    return data.ratings || {};
+  } catch (e) {
+    console.warn('Erro ao buscar notas em lote:', e);
+    return {};
   }
 }
 

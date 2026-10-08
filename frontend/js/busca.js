@@ -12,8 +12,8 @@ const $ = (id) => document.getElementById(id);
 /* ---------- mapa de elementos do DOM ---------- */
 const dom = {
   searchForm:            $("search-form"),
-searchButton: $("search-btn"),
-  searchButton:          $("search-button"),
+  searchInput:           $("search-input"),
+  searchButton:          $("search-btn"),
   booksContainer:        $("books-container"),
   loading:               $("loading"),
   noResults:             $("no-results"),
@@ -121,7 +121,46 @@ async function fetchBooksRaw(q, params = {}) {
 
   return res.json();
 }
+/* ================= notas em lote (nosso banco) ================= */
+async function fetchRatingsBatch(volumeIds) {
+  if (!volumeIds || !volumeIds.length) return {};
+  try {
+    const ids = volumeIds.slice(0, 100).join(',');
+    const res = await fetch(`/api/ratings/batch?ids=${encodeURIComponent(ids)}`, {
+      credentials: 'same-origin'
+    });
+    if (!res.ok) return {};
+    const data = await res.json();
+    return data.ratings || {};
+  } catch (e) {
+    console.warn('Erro ao buscar notas em lote:', e);
+    return {};
+  }
+}
 
+/* ================= livros manuais (catálogo comunitário) ================= */
+async function fetchCommunityBooks(q) {
+  try {
+    const url = `/api/search?q=${encodeURIComponent(q || '')}&limit=24`;
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.livros || []).map(item => ({
+      id: item.volumeId || item.isbn || '',
+      title: item.title || 'Sem título',
+      authors: item.authors || [],
+      year: item.publishedDate ? String(item.publishedDate).split('-')[0] : 'Desconhecido',
+      categories: item.categories || [],
+      rating: 0, // será preenchido depois
+      thumbnail: item.thumbnail || '',
+      description: item.description || '',
+      manual: true
+    }));
+  } catch (e) {
+    console.warn('Erro ao buscar livros manuais:', e);
+    return [];
+  }
+}
 /* ================= filtro + normalização ================= */
 function filterAndNormalize(items) {
   if (!items) return [];
@@ -423,11 +462,47 @@ async function performSearch(query) {
     let q = query ? `${query}` : "subject:fiction";
     if (state.author) q += `+inauthor:${state.author}`;
 
-    const raw = await fetchBooksRaw(q, { maxResults: 24, orderBy: "relevance" });
-    const items = raw.items || [];
+    // 1) Busca em paralelo: Google Books + catálogo comunitário
+    const [raw, community] = await Promise.all([
+      fetchBooksRaw(q, { maxResults: 24, orderBy: "relevance" }).catch(() => ({ items: [] })),
+      fetchCommunityBooks(query)
+    ]);
 
+    const items = raw.items || [];
     updateTopCategory(items);
-    renderBooks(filterAndNormalize(items));
+
+    // 2) Normaliza Google Books
+    const normalizados = filterAndNormalize(items);
+
+    // 3) Adiciona livros comunitários (sem duplicar)
+    const idsGoogle = new Set(normalizados.map(b => b.id));
+    const comunitarios = community.filter(b => !idsGoogle.has(b.id));
+
+    const todos = [...normalizados, ...comunitarios];
+
+    // 4) Busca as notas REAIS do nosso banco em lote
+    const ids = todos.map(b => b.id).filter(Boolean);
+    const ratings = await fetchRatingsBatch(ids);
+
+    // 5) Aplica as notas reais nos cards
+    todos.forEach(b => {
+      const r = ratings[b.id];
+      if (r) {
+        b.rating = r.media;
+        b.ratingsCount = r.total;
+      } else {
+        b.rating = 0;
+        b.ratingsCount = 0;
+      }
+    });
+
+    // 6) Aplica filtro de avaliação (agora com notas REAIS)
+    const filtrados = todos.filter(b => {
+      if (state.rating && (b.rating || 0) < state.rating) return false;
+      return true;
+    });
+
+    renderBooks(filtrados);
   } catch (err) {
     console.error(err);
     if (dom.booksContainer) dom.booksContainer.innerHTML = "";
@@ -439,7 +514,6 @@ async function performSearch(query) {
     if (dom.loading) dom.loading.hidden = true;
   }
 }
-
 /* ================= top category (traduzida) ================= */
 function updateTopCategory(items) {
   const counts = {};
@@ -466,10 +540,21 @@ async function initialLoad() {
     const items = res.items || [];
     updateTopCategory(items);
 
-    const sorted = items.slice().sort((a, b) =>
-      (b.volumeInfo?.averageRating || 0) - (a.volumeInfo?.averageRating || 0)
-    );
-    renderBooks(filterAndNormalize(sorted.slice(0, 12)));
+    const normalizados = filterAndNormalize(items);
+
+    // Busca notas REAIS do nosso banco
+    const ids = normalizados.map(b => b.id).filter(Boolean);
+    const ratings = await fetchRatingsBatch(ids);
+
+    normalizados.forEach(b => {
+      const r = ratings[b.id];
+      b.rating = r ? r.media : 0;
+      b.ratingsCount = r ? r.total : 0;
+    });
+
+    // Ordena por nota real (do nosso banco)
+    const sorted = normalizados.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    renderBooks(sorted.slice(0, 12));
   } catch (err) {
     console.error(err);
     if (dom.noResults) {

@@ -1330,6 +1330,44 @@ app.post('/api/book/:volumeId/rating', async (req, res) => {
     return res.status(500).json({ mensagem: 'Erro ao salvar avaliação.' });
   }
 });
+// ================================================================
+// ============ ROTA: MÉDIAS EM LOTE (batch) =====================
+// Recebe ?ids=vol1,vol2,vol3 e retorna a média de cada
+// ================================================================
+app.get('/api/ratings/batch', async (req, res) => {
+  try {
+    const idsParam = String(req.query.ids || '').trim();
+    if (!idsParam) return res.json({ ratings: {} });
+
+    const ids = idsParam.split(',').map(s => s.trim()).filter(Boolean).slice(0, 100);
+    if (!ids.length) return res.json({ ratings: {} });
+
+    const agg = await Rating.aggregate([
+      { $match: { bookVolumeId: { $in: ids } } },
+      {
+        $group: {
+          _id: '$bookVolumeId',
+          media: { $avg: '$value' },
+          total: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const ratings = {};
+    agg.forEach(r => {
+      ratings[r._id] = {
+        media: Number(r.media.toFixed(1)),
+        total: r.total
+      };
+    });
+
+    return res.json({ ratings });
+  } catch (err) {
+    console.error('Erro em /api/ratings/batch:', err);
+    return res.status(500).json({ mensagem: 'Erro ao buscar médias.' });
+  }
+});
+
 
 // ---------- API: COMENTÁRIOS ----------
 app.get('/api/book/:volumeId/comments', async (req, res) => {
@@ -1707,29 +1745,62 @@ app.post('/api/shelf/add-manual', async (req, res) => {
 });
 
 // ================================================================
-// ============ ROTA: BUSCA SIMPLES NA ESTANTE DO USUÁRIO =========
+// ============ ROTA: BUSCA COMUNITÁRIA (livros manuais + snapshots)
 // ================================================================
 app.get('/api/search', async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const q = String(req.query.q || '').trim();
+    const limit = Math.min(50, parseInt(req.query.limit || '24', 10));
+
+    // Se não tem query, retorna os livros manuais mais recentes (catálogo)
     if (!q) {
-      const itens = await ShelfItem.find({ userId: req.user._id }).sort({ addedAt: -1 }).lean();
-      return res.json({ livros: itens });
+      const itens = await ShelfItem.find({ manual: true })
+        .sort({ addedAt: -1 })
+        .limit(limit)
+        .lean();
+      return res.json({ livros: itens, source: 'community' });
     }
+
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    const itens = await ShelfItem.find({
-      userId: req.user._id,
-      $or: [
-        { title: regex },
-        { authors: regex },
-        { description: regex },
-        { categories: regex }
-      ]
-    }).sort({ addedAt: -1 }).lean();
-    return res.json({ livros: itens });
+
+    // Busca em paralelo: livros manuais (todos usuários) + snapshots da Google
+    const [manuais, snapshots] = await Promise.all([
+      ShelfItem.find({
+        manual: true,
+        $or: [
+          { title: regex },
+          { authors: regex },
+          { description: regex },
+          { categories: regex },
+          { isbn: regex }
+        ]
+      }).limit(limit).lean(),
+
+      BookSnapshot.find({
+        $or: [
+          { title: regex },
+          { authors: regex },
+          { description: regex },
+          { categories: regex }
+        ]
+      }).limit(limit).lean()
+    ]);
+
+    // Junta e remove duplicados por volumeId
+    const mapa = new Map();
+    [...manuais, ...snapshots].forEach(item => {
+      if (item.volumeId && !mapa.has(item.volumeId)) {
+        mapa.set(item.volumeId, item);
+      }
+    });
+
+    return res.json({
+      livros: Array.from(mapa.values()),
+      source: 'community',
+      total: mapa.size
+    });
   } catch (err) {
-    console.error(err);
+    console.error('Erro em /api/search:', err);
     return res.status(500).json({ mensagem: 'Erro na busca.' });
   }
 });
