@@ -469,9 +469,30 @@ async function performSearch(query) {
     let q = query ? `${query}` : "subject:fiction";
     if (state.author) q += `+inauthor:${state.author}`;
 
+    // 🔥 Se o filtro de ANO está ativo, busca no BookSnapshot (MongoDB)
+    //     em vez do Google Books (que não tem filtro de ano).
+    let raw;
+    if (state.year && /^\d{4}$/.test(state.year)) {
+      const params = new URLSearchParams({
+        year: state.year,
+        q: query || '',
+        limit: '40'
+      });
+      if (state.author) params.set('author', state.author);
+
+      const resByYear = await fetch(`/api/books/by-year?${params.toString()}`, {
+        credentials: 'same-origin'
+      });
+      raw = await resByYear.json().catch(() => ({ items: [] }));
+      console.log(`[by-year] Retornou ${raw.items?.length || 0} livros de ${state.year}`);
+    } else {
+      raw = await fetchBooksRaw(q, { maxResults: 40, orderBy: "relevance" })
+        .catch(() => ({ items: [] }));
+    }
+
     // 1) Busca em paralelo: Google Books + catálogo comunitário
-    const [raw, community] = await Promise.all([
-      fetchBooksRaw(q, { maxResults: 24, orderBy: "relevance" }).catch(() => ({ items: [] })),
+    const [_, community] = await Promise.all([
+      Promise.resolve(raw),
       fetchCommunityBooks(query)
     ]);
 
@@ -540,9 +561,27 @@ async function initialLoad() {
   if (dom.loading) dom.loading.hidden = false;
 
   try {
+    // 🔥 Se filtro de ano ativo, busca no BookSnapshot
+    let raw;
+    if (state.year && /^\d{4}$/.test(state.year)) {
+      const params = new URLSearchParams({
+        year: state.year,
+        q: '',
+        limit: '40'
+      });
+      const resByYear = await fetch(`/api/books/by-year?${params.toString()}`, {
+        credentials: 'same-origin'
+      });
+      raw = await resByYear.json().catch(() => ({ items: [] }));
+      console.log(`[by-year] initialLoad: ${raw.items?.length || 0} livros de ${state.year}`);
+    } else {
+      raw = await fetchBooksRaw("subject:fiction", { maxResults: 40, orderBy: "relevance" })
+        .catch(() => ({ items: [] }));
+    }
+
     // 1) Busca sugestões da Google Books + catálogo comunitário
-    const [raw, community] = await Promise.all([
-      fetchBooksRaw("subject:fiction", { maxResults: 30, orderBy: "relevance" }).catch(() => ({ items: [] })),
+    const [_, community] = await Promise.all([
+      Promise.resolve(raw),
       fetchCommunityBooks("")
     ]);
 

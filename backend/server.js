@@ -357,35 +357,6 @@ async function enviarSMSCodigo(telefoneE164, codigo) {
     console.log(`[SMS-FALLBACK] Código para ${telefoneE164}: ${codigo}`);
     return false;
   }
-}async function enviarSMSCodigo(telefoneE164, codigo) {
-  try {
-    const resp = await fetch('https://stackverify.site/api/v1/sms/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SMS_API_TOKEN}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        recipients: [telefoneE164],
-        body: `Spoiler Esperado: seu código é ${codigo}. Expira em 10 minutos.`,
-        sender_id: 'SpoilerEsp'
-      })
-    });
-
-    if (!resp.ok) {
-      const erro = await resp.text();
-      console.error('StackVerify erro:', resp.status, erro);
-      throw new Error('Falha ao enviar SMS');
-    }
-
-    console.log(`[SMS] Código enviado para ${telefoneE164}: ${codigo}`);
-    return true;
-  } catch (err) {
-    console.error('Erro no envio de SMS:', err.message);
-    console.log(`[SMS-FALLBACK] Código para ${telefoneE164}: ${codigo}`);
-    return false;
-  }
 }
 
 function normalizarTelefone(input) {
@@ -1179,40 +1150,29 @@ app.get('/api/books/novos', async (req, res) => {
 app.get('/api/books/search', async (req, res) => {
   try {
     let q            = String(req.query.q || 'subject:fiction');
-    const maxResults = String(req.query.maxResults || '24');
+    const maxResults = String(req.query.maxResults || '40');
     const orderBy    = String(req.query.orderBy || 'relevance');
     const startIndex = req.query.startIndex ? String(req.query.startIndex) : null;
 
-    // 🔥 Filtros injetados na query do Google Books
-    const year        = String(req.query.year || '').trim();
     const author      = String(req.query.author || '').trim();
     const includeCats = String(req.query.includeCategories || '').trim();
     const excludeCats = String(req.query.excludeCategories || '').trim();
 
-    // Ano: publishedDate:2020
-    if (year && /^\d{4}$/.test(year)) {
-      q += `+publishedDate:${year}`;
-    }
-
-    // Autor: inauthor:Rowling
-    if (author && !q.includes('inauthor:')) {
+    // Autor → +inauthor:Rowling
+    if (author && !q.toLowerCase().includes('inauthor:')) {
       q += `+inauthor:${author}`;
     }
 
-    // Gêneros a incluir
+    // Gêneros a incluir → +subject:fantasy
     if (includeCats) {
       const cats = includeCats.split('|').map(c => c.trim()).filter(Boolean);
-      cats.forEach(cat => {
-        q += `+subject:${cat}`;
-      });
+      cats.forEach(cat => { q += `+subject:${cat}`; });
     }
 
-    // Gêneros a excluir
+    // Gêneros a excluir → -subject:romance
     if (excludeCats) {
       const cats = excludeCats.split('|').map(c => c.trim()).filter(Boolean);
-      cats.forEach(cat => {
-        q += `+-subject:${cat}`;
-      });
+      cats.forEach(cat => { q += `+-subject:${cat}`; });
     }
 
     console.log('[Google Books] Query final:', q);
@@ -1225,15 +1185,105 @@ app.get('/api/books/search', async (req, res) => {
     if (GOOGLE_API_KEY) url.searchParams.set('key', GOOGLE_API_KEY);
 
     const resp = await fetch(url);
-    const text = await resp.text();
-    res.status(resp.status).type('application/json').send(text);
+    const data = await resp.json();
+
+    // 🔥 Salva cada livro no BookSnapshot (cache automático)
+    if (data.items && data.items.length) {
+      const ops = data.items.map(item => {
+        const info = item.volumeInfo || {};
+        const snap = {
+          volumeId: item.id,
+          title: info.title || '',
+          authors: info.authors || [],
+          description: info.description || '',
+          categories: info.categories || [],
+          industryIdentifiers: info.industryIdentifiers || [],
+          thumbnail: info.imageLinks?.thumbnail || '',
+          publishedDate: info.publishedDate || ''
+        };
+        return {
+          updateOne: {
+            filter: { volumeId: item.id },
+            update: { $set: snap },
+            upsert: true
+          }
+        };
+      });
+      try {
+        await BookSnapshot.bulkWrite(ops);
+        console.log(`[BookSnapshot] ${ops.length} livros salvos/atualizados`);
+      } catch (e) {
+        console.warn('Erro ao salvar no BookSnapshot:', e.message);
+      }
+    }
+
+    res.status(resp.status).type('application/json').json(data);
   } catch (err) {
     console.error('Erro em /api/books/search:', err);
     res.status(500).json({ error: { message: 'Erro interno ao consultar Google Books.' } });
   }
 });
-
 // ================================================================
+// ============ ROTA: BUSCAR LIVROS POR ANO (BookSnapshot) ========
+// Consulta o MongoDB — funciona 100% para filtro de ano
+// ================================================================
+app.get('/api/books/by-year', async (req, res) => {
+  try {
+    const year   = String(req.query.year || '').trim();
+    const q      = String(req.query.q || '').trim();
+    const author = String(req.query.author || '').trim();
+    const limit  = Math.min(100, parseInt(req.query.limit || '40', 10));
+
+    if (!year || !/^\d{4}$/.test(year)) {
+      return res.status(400).json({ mensagem: 'Ano inválido. Use formato YYYY.' });
+    }
+
+    // Filtro base: publishedDate começa com o ano (ex: "2020-...")
+    const filtro = {
+      publishedDate: new RegExp('^' + year)
+    };
+
+    // Texto (título, autores, descrição, categorias)
+    if (q) {
+      const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filtro.$or = [
+        { title: regex },
+        { authors: regex },
+        { description: regex },
+        { categories: regex }
+      ];
+    }
+
+    // Autor específico
+    if (author) {
+      const regexAuthor = new RegExp(author.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filtro.authors = regexAuthor;
+    }
+
+    const livros = await BookSnapshot.find(filtro).limit(limit).lean();
+
+    console.log(`[by-year] Ano=${year} q="${q}" → ${livros.length} livros do BookSnapshot`);
+
+    return res.json({
+      source: 'db',
+      totalItems: livros.length,
+      items: livros.map(l => ({
+        volumeId: l.volumeId,
+        title: l.title,
+        authors: l.authors || [],
+        thumbnail: l.thumbnail || '',
+        publishedDate: l.publishedDate || '',
+        categories: l.categories || [],
+        description: l.description || '',
+        averageRating: 0,
+        ratingsCount: 0
+      }))
+    });
+  } catch (err) {
+    console.error('Erro em /api/books/by-year:', err);
+    return res.status(500).json({ mensagem: 'Erro ao buscar livros por ano.' });
+  }
+});
 // ============ DETALHE DO LIVRO (prioriza dados locais) ==========
 // ================================================================
 app.get('/api/book/:volumeId', async (req, res) => {
