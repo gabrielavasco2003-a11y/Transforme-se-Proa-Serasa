@@ -2,15 +2,15 @@
    + redirecionamento para book.html
    + leitura do parâmetro ?q= vindo do index.html
    + proxy via backend (/api/books/search) — a chave NÃO fica no front
-   + filtros funcionam mesmo sem pesquisa (na tela de descoberta) */
+   + filtros funcionam mesmo sem pesquisa (na tela de descoberta)
+   + sugestões aplicam direto + remover filtros limpa tudo */
 
 const API_BASE = "/api/books/search";
 const CATEGORIES_URL = "/data/categories.json";
 
-/* ---------- helper seguro para pegar elementos ---------- */
 const $ = (id) => document.getElementById(id);
 
-/* ---------- mapa de elementos do DOM ---------- */
+/* ---------- DOM ---------- */
 const dom = {
   searchForm:            $("search-form"),
   searchInput:           $("search-input"),
@@ -35,7 +35,7 @@ const dom = {
   resultsTitle:          $("results-title")
 };
 
-/* ---------- estado ---------- */
+/* ---------- Estado ---------- */
 const state = {
   query: "",
   rating: 0,
@@ -99,7 +99,7 @@ function debounce(fn, wait = 350) {
   };
 }
 
-/* ================= fetch helper (via backend) ================= */
+/* ================= fetch helper ================= */
 async function fetchBooksRaw(q, params = {}) {
   const url = new URL(API_BASE, window.location.origin);
   url.searchParams.set("q", q);
@@ -107,13 +107,9 @@ async function fetchBooksRaw(q, params = {}) {
   if (params.startIndex) url.searchParams.set("startIndex", String(params.startIndex));
   if (params.orderBy)    url.searchParams.set("orderBy", params.orderBy);
 
-  // 🔥 Envia os filtros ativos para o backend
-  if (state.year) {
-    url.searchParams.set("year", state.year);
-  }
-  if (state.author) {
-    url.searchParams.set("author", state.author);
-  }
+  if (state.year)   url.searchParams.set("year", state.year);
+  if (state.author) url.searchParams.set("author", state.author);
+
   if (state.includeCategories.length) {
     const allCats = state.includeCategories.flatMap(cat => toApiCategoryList(cat));
     url.searchParams.set("includeCategories", allCats.join("|"));
@@ -137,7 +133,7 @@ async function fetchBooksRaw(q, params = {}) {
   return res.json();
 }
 
-/* ================= notas em lote (nosso banco) ================= */
+/* ================= notas em lote ================= */
 async function fetchRatingsBatch(volumeIds) {
   if (!volumeIds || !volumeIds.length) return {};
   try {
@@ -154,7 +150,7 @@ async function fetchRatingsBatch(volumeIds) {
   }
 }
 
-/* ================= livros manuais (catálogo comunitário) ================= */
+/* ================= livros manuais (catálogo) ================= */
 async function fetchCommunityBooks(q) {
   try {
     const url = `/api/search?q=${encodeURIComponent(q || '')}&limit=24`;
@@ -179,7 +175,7 @@ async function fetchCommunityBooks(q) {
   }
 }
 
-/* ================= normalização (não filtra) ================= */
+/* ================= normalização ================= */
 function filterAndNormalize(items) {
   if (!items) return [];
 
@@ -203,18 +199,16 @@ function filterAndNormalize(items) {
   });
 }
 
-/* ================= aplicar TODOS os filtros ================= */
 /* ================= aplicar filtros ================= */
-/* Só aplica o filtro de AVALIAÇÃO.
-   Os filtros de ano, autor e gênero são enviados direto para o Google Books
-   via fetchBooksRaw, então o backend já devolve os livros já filtrados. */
+/* Só filtra por AVALIAÇÃO no frontend.
+   Ano, autor e gênero já são aplicados no backend. */
 function applyAllFilters(books) {
   return books.filter(b => {
-    // Filtro de avaliação (nota do banco é 0-10; filtro em estrelas 0-5)
     if (state.rating && ((b.rating || 0) / 2) < state.rating) return false;
     return true;
   });
 }
+
 /* ================= render ================= */
 function renderBooks(items) {
   if (!dom.booksContainer) return;
@@ -266,7 +260,7 @@ function escapeHtml(str) {
   ));
 }
 
-/* ================= UI: lista de categorias ================= */
+/* ================= lista de categorias ================= */
 function renderCategoryLists() {
   if (dom.includeCategoriesList) dom.includeCategoriesList.innerHTML = "";
   if (dom.excludeCategoriesList) dom.excludeCategoriesList.innerHTML = "";
@@ -298,6 +292,7 @@ function addCategory(cat, type = "include") {
   renderCategoryLists();
 }
 
+/* remover categoria via delegação */
 document.addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-cat]");
   if (!btn) return;
@@ -317,12 +312,20 @@ function showSuggestions(container, items) {
   if (!container) return;
   container.innerHTML = "";
   if (!items || !items.length) { container.hidden = true; return; }
+
   items.slice(0, 10).forEach(i => {
     const div = document.createElement("div");
     div.textContent = i;
+    div.style.cursor = "pointer";
     div.addEventListener("click", () => {
-      if (container === dom.categorySuggestions) addCategory(i, "include");
-      else addCategory(i, "exclude");
+      // 🔥 Ao clicar, adiciona direto e já aplica o filtro
+      if (container === dom.categorySuggestions) {
+        addCategory(i, "include");
+        if (dom.categorySearch) dom.categorySearch.value = "";
+      } else {
+        addCategory(i, "exclude");
+        if (dom.excludeSearch) dom.excludeSearch.value = "";
+      }
       container.hidden = true;
       reloadWithFilters();
     });
@@ -338,7 +341,7 @@ function suggestCategoriesFromInput(inputValue) {
   return all.filter(c => c.toLowerCase().includes(q)).slice(0, 12);
 }
 
-/* ================= rating filter ================= */
+/* ================= filtro de estrelas ================= */
 if (dom.ratingFilter) {
   dom.ratingFilter.addEventListener("click", (e) => {
     const btn = e.target.closest(".star-btn");
@@ -408,27 +411,39 @@ if (dom.applyFiltersBtn) {
 
 if (dom.clearFiltersBtn) {
   dom.clearFiltersBtn.addEventListener("click", () => {
+    // 🔥 Limpa TUDO
     state.rating = 0;
     state.includeCategories = [];
     state.excludeCategories = [];
     state.author = "";
     state.year = "";
+    state.query = "";
+
+    if (dom.searchInput) dom.searchInput.value = "";
     if (dom.authorFilter) dom.authorFilter.value = "";
     if (dom.yearFilter) dom.yearFilter.value = "";
     if (dom.categorySearch) dom.categorySearch.value = "";
     if (dom.excludeSearch) dom.excludeSearch.value = "";
+
     renderCategoryLists();
+    if (dom.categorySuggestions) dom.categorySuggestions.hidden = true;
+    if (dom.excludeSuggestions) dom.excludeSuggestions.hidden = true;
+
     if (dom.ratingFilter) {
       dom.ratingFilter.querySelectorAll(".star-btn").forEach(b => {
         b.classList.remove("active");
         b.setAttribute("aria-pressed", "false");
       });
     }
-    reloadWithFilters();
+
+    if (dom.resultsTitle) dom.resultsTitle.textContent = "Melhores Avaliados";
+
+    // 🔥 Recarrega a lista inicial de descoberta
+    initialLoad();
   });
 }
 
-/* ================= form / live search ================= */
+/* ================= form / busca ================= */
 if (dom.searchForm) {
   dom.searchForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -447,14 +462,11 @@ if (dom.searchInput) {
 }
 
 /* ================= recarregar com filtros ================= */
-/* Decide se é busca ou descoberta, e aplica os filtros */
 function reloadWithFilters() {
   const q = state.query || (dom.searchInput ? dom.searchInput.value.trim() : "");
   if (!q) {
-    // Sem busca → recarrega a lista inicial de descoberta
     initialLoad();
   } else {
-    // Com busca → refaz a busca com filtros
     performSearch(q);
   }
 }
@@ -469,8 +481,7 @@ async function performSearch(query) {
     let q = query ? `${query}` : "subject:fiction";
     if (state.author) q += `+inauthor:${state.author}`;
 
-    // 🔥 Se o filtro de ANO está ativo, busca no BookSnapshot (MongoDB)
-    //     em vez do Google Books (que não tem filtro de ano).
+    // 🔥 Se filtro de ANO ativo, busca no BookSnapshot (MongoDB)
     let raw;
     if (state.year && /^\d{4}$/.test(state.year)) {
       const params = new URLSearchParams({
@@ -490,41 +501,26 @@ async function performSearch(query) {
         .catch(() => ({ items: [] }));
     }
 
-    // 1) Busca em paralelo: Google Books + catálogo comunitário
-    const [_, community] = await Promise.all([
-      Promise.resolve(raw),
-      fetchCommunityBooks(query)
-    ]);
-
+    const community = await fetchCommunityBooks(query);
     const items = raw.items || [];
     updateTopCategory(items);
 
-    // 2) Normaliza Google Books
     const normalizados = filterAndNormalize(items);
 
-    // 3) Adiciona livros comunitários (sem duplicar)
     const idsGoogle = new Set(normalizados.map(b => b.id));
     const comunitarios = community.filter(b => !idsGoogle.has(b.id));
 
     const todos = [...normalizados, ...comunitarios];
 
-    // 4) Busca as notas REAIS do nosso banco em lote
     const ids = todos.map(b => b.id).filter(Boolean);
     const ratings = await fetchRatingsBatch(ids);
 
-    // 5) Aplica as notas reais nos cards
     todos.forEach(b => {
       const r = ratings[b.id];
-      if (r) {
-        b.rating = r.media;
-        b.ratingsCount = r.total;
-      } else {
-        b.rating = 0;
-        b.ratingsCount = 0;
-      }
+      b.rating = r ? r.media : 0;
+      b.ratingsCount = r ? r.total : 0;
     });
 
-    // 6) Aplica TODOS os filtros
     const filtrados = applyAllFilters(todos);
 
     renderBooks(filtrados);
@@ -540,7 +536,7 @@ async function performSearch(query) {
   }
 }
 
-/* ================= top category (traduzida) ================= */
+/* ================= top category ================= */
 function updateTopCategory(items) {
   const counts = {};
   (items || []).forEach(it => {
@@ -555,13 +551,12 @@ function updateTopCategory(items) {
   if (dom.topCategoryName) dom.topCategoryName.textContent = top;
 }
 
-/* ================= initial load (descoberta) ================= */
+/* ================= initial load ================= */
 async function initialLoad() {
   if (dom.resultsTitle) dom.resultsTitle.textContent = "Melhores Avaliados";
   if (dom.loading) dom.loading.hidden = false;
 
   try {
-    // 🔥 Se filtro de ano ativo, busca no BookSnapshot
     let raw;
     if (state.year && /^\d{4}$/.test(state.year)) {
       const params = new URLSearchParams({
@@ -579,25 +574,17 @@ async function initialLoad() {
         .catch(() => ({ items: [] }));
     }
 
-    // 1) Busca sugestões da Google Books + catálogo comunitário
-    const [_, community] = await Promise.all([
-      Promise.resolve(raw),
-      fetchCommunityBooks("")
-    ]);
-
+    const community = await fetchCommunityBooks("");
     const items = raw.items || [];
     updateTopCategory(items);
 
-    // 2) Normaliza Google Books
     const normalizados = filterAndNormalize(items);
 
-    // 3) Junta comunitários (sem duplicar)
     const idsGoogle = new Set(normalizados.map(b => b.id));
     const comunitarios = community.filter(b => !idsGoogle.has(b.id));
 
     const todos = [...normalizados, ...comunitarios];
 
-    // 4) Notas reais do banco
     const ids = todos.map(b => b.id).filter(Boolean);
     const ratings = await fetchRatingsBatch(ids);
 
@@ -607,10 +594,7 @@ async function initialLoad() {
       b.ratingsCount = r ? r.total : 0;
     });
 
-    // 5) Ordena por nota real
     const sorted = todos.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0));
-
-    // 6) ⚡ APLICA OS FILTROS TAMBÉM AQUI
     const filtrados = applyAllFilters(sorted);
 
     renderBooks(filtrados.slice(0, 24));
@@ -674,3 +658,4 @@ function getQueryFromURL() {
 window.performSearch = performSearch;
 window.state = state;
 window.reloadWithFilters = reloadWithFilters;
+window.initialLoad = initialLoad;
