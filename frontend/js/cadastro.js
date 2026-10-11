@@ -1,22 +1,60 @@
+/* =========================================================================
+   cadastro.js — Cadastro de usuário
+   Fluxo: preenche form → POST /api/cadastro → redireciona para validação de telefone
+   ========================================================================= */
+
 document.getElementById('cadastroForm').addEventListener('submit', async function (event) {
   event.preventDefault();
 
-  const nome            = document.querySelector("[name='nome']").value.trim();
-  const usuario         = document.querySelector("[name='usuario']").value.trim();
-  const email           = document.querySelector("[name='email']").value.trim();
-  const confirmarEmail  = document.querySelector("[name='confirmarEmail']").value.trim();
-  const senha           = document.querySelector("[name='senha']").value;
-  const confirmarSenha  = document.querySelector("[name='confirmarSenha']").value;
-  const telefone        = document.querySelector("[name='telefone']").value;
-  const nascimento      = document.querySelector("[name='nascimento']").value;
-  const perguntaSenha   = document.querySelector("[name='perguntaSenha']")?.value.trim() || '';
+  // ---------- 1. Captura dos campos ----------
+  const nome           = document.querySelector("[name='nome']").value.trim();
+  const usuario        = document.querySelector("[name='usuario']").value.trim();
+  const email          = document.querySelector("[name='email']").value.trim();
+  const confirmarEmail = document.querySelector("[name='confirmarEmail']").value.trim();
+  const senha          = document.querySelector("[name='senha']").value;
+  const confirmarSenha = document.querySelector("[name='confirmarSenha']").value;
+  const telefone       = document.querySelector("[name='telefone']").value.trim();
+  const nascimento     = document.querySelector("[name='nascimento']").value;
+  const perguntaSenha  = document.querySelector("[name='perguntaSenha']")?.value.trim() || '';
+    const canalVerificacao = document.querySelector("[name='canalVerificacao']:checked")?.value || 'email';
 
-  // --- Validações básicas ---
-  if (email !== confirmarEmail) return alert('Os e-mails não coincidem!');
-  if (senha !== confirmarSenha) return alert('As senhas não coincidem!');
-  if (senha.length < 6)         return alert('A senha deve ter ao menos 6 caracteres.');
+  // ---------- 2. Validações básicas ----------
+  if (email !== confirmarEmail) {
+    return alert('Os e-mails não coincidem!');
+  }
+    // Validação de data de nascimento
+  if (!nascimento) {
+    return alert('Informe sua data de nascimento.');
+  }
 
-  // --- Validação das caixas de concordância ---
+  const dataNasc = new Date(nascimento);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  if (isNaN(dataNasc.getTime())) {
+    return alert('Data de nascimento inválida.');
+  }
+  if (dataNasc > hoje) {
+    return alert('A data de nascimento não pode ser no futuro.');
+  }
+
+  let idade = hoje.getFullYear() - dataNasc.getFullYear();
+  const mesAtual = hoje.getMonth();
+  const mesNasc = dataNasc.getMonth();
+  if (mesAtual < mesNasc || (mesAtual === mesNasc && hoje.getDate() < dataNasc.getDate())) {
+    idade--;
+  }
+  if (idade < 12) {
+    return alert('Você precisa ter pelo menos 12 anos para se cadastrar.');
+  }
+  if (senha !== confirmarSenha) {
+    return alert('As senhas não coincidem!');
+  }
+  if (senha.length < 6) {
+    return alert('A senha deve ter ao menos 6 caracteres.');
+  }
+
+  // ---------- 3. Validação dos checkboxes ----------
   const termosMarcado    = document.getElementById('termos')?.checked    || false;
   const regrasMarcado    = document.getElementById('regras')?.checked    || false;
   const marketingMarcado = document.getElementById('marketing')?.checked || false;
@@ -25,7 +63,7 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
     return alert('Você precisa aceitar os Termos e Condições e as Regras da comunidade para se cadastrar.');
   }
 
-  // --- Payload correto (campo "senha", não "senhaHash") ---
+  // ---------- 4. Monta payload ----------
   const payload = {
     nome,
     usuario,
@@ -36,9 +74,10 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
     perguntaSenha,
     termos:    termosMarcado,
     regras:    regrasMarcado,
-    marketing: marketingMarcado
+    marketing: marketingMarcado,
+    canalVerificacao
   };
-
+  // ---------- 5. Envia para o backend ----------
   try {
     const response = await fetch('/api/cadastro', {
       method: 'POST',
@@ -52,13 +91,22 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
 
     if (!response.ok) return;
 
+    // ---------- 6. Salva usuário localmente ----------
     const user = data.usuario || payload;
     localStorage.setItem('usuarioLogado', JSON.stringify(user));
     if (window.OfflineDB) await window.OfflineDB.salvarUsuario(user);
-    window.location.href = '/perfil';
+
+    // ---------- 7. Redireciona para validação de telefone ----------
+    if (data.precisaValidarTelefone) {
+      sessionStorage.setItem('validarTelefone', telefone);
+      sessionStorage.setItem('canalVerificacao', data.canalVerificacao || canalVerificacao);
+      window.location.href = '/validar-codigo.html';
+    } else {
+      window.location.href = '/perfil';
+    }
 
   } catch (err) {
-    // Offline → salva localmente e enfileira
+    // ---------- 8. Modo offline ----------
     console.error(err);
     localStorage.setItem('usuarioLogado', JSON.stringify(payload));
 
@@ -79,7 +127,9 @@ document.getElementById('cadastroForm').addEventListener('submit', async functio
   }
 });
 
-// ✅ Login com Google
+/* =========================================================================
+   Login com Google
+   ========================================================================= */
 function loginGoogle() {
   window.location.href = '/api/google';
 }

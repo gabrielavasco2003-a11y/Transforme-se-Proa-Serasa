@@ -23,9 +23,18 @@ const userSchema = new mongoose.Schema({
   // --- Telefone verificado ---
   telefoneVerificado: { type: Boolean, default: false },
 
+  // --- Status da conta (só fica true após validar o telefone) ---
+  contaAtiva: { type: Boolean, default: false },
+  // --- Canal de verificação escolhido pelo usuário: 'email' ou 'sms' ---
+  canalVerificacao: {
+    type: String,
+    enum: ['email', 'sms'],
+    default: 'email'
+  },
+    // --- E-mail verificado ---
+  emailVerificado: { type: Boolean, default: false },
   // --- Avatar ---
   avatar: { type: String, default: '/img/perfil/1.png' },
-
   // --- Configurações ---
   config: {
     language:   { type: String, default: 'pt-BR' },
