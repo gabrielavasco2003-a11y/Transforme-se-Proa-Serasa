@@ -24,6 +24,14 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(cors({ origin: true, credentials: true }));
+
+// Middleware: garante que req.user é um usuário REAL (não pendente do Google)
+function requireUser(req, res, next) {
+  if (!req.user || !req.user._id || req.user.novoViaGoogle) {
+    return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
+  }
+  next();
+}
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -500,9 +508,8 @@ app.post('/api/recuperar/redefinir', async (req, res) => {
 
 // ============ ROTAS: VALIDAÇÃO DE TELEFONE ======================
 // ================================================================
-app.post('/api/validar-telefone/enviar', async (req, res) => {
+app.post('/api/validar-telefone/enviar', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { telefone } = req.body;
     if (!telefone) return res.status(400).json({ mensagem: 'Telefone obrigatório.' });
     const e164 = normalizarTelefone(telefone);
@@ -521,9 +528,8 @@ app.post('/api/validar-telefone/enviar', async (req, res) => {
   }
 });
 
-app.post('/api/validar-telefone/validar', async (req, res) => {
+app.post('/api/validar-telefone/validar', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { codigo } = req.body;
     if (!codigo) return res.status(400).json({ mensagem: 'Código obrigatório.' });
 
@@ -738,7 +744,7 @@ app.post('/api/login', async (req, res) => {
 });
 // ---------- API: ME ----------
 app.get('/api/me', (req, res) => {
-  if (req.user) return res.json(sanitize(req.user));
+  if (req.user && req.user._id) return res.json(sanitize(req.user));
   res.status(401).json({ mensagem: 'Não autenticado' });
 });
 
@@ -770,9 +776,8 @@ app.delete('/api/excluir', async (req, res) => {
 // ================================================================
 // ============ NOVO: ATUALIZAR AVATAR DO PERFIL ==================
 // ================================================================
-app.post('/api/perfil/avatar', async (req, res) => {
+app.post('/api/perfil/avatar', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { avatar } = req.body;
 
     const AVATARES_VALIDOS = [
@@ -802,9 +807,8 @@ app.post('/api/perfil/avatar', async (req, res) => {
 // ================================================================
 // ============ NOVO: ATUALIZAR DADOS DO PERFIL ===================
 // ================================================================
-app.post('/api/perfil/atualizar', async (req, res) => {
+app.post('/api/perfil/atualizar', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
 
     const { nome, usuario: username, senha } = req.body;
 
@@ -833,9 +837,8 @@ app.post('/api/perfil/atualizar', async (req, res) => {
 // ================================================================
 // ============ NOVO: CONFIGURAÇÕES DO USUÁRIO ====================
 // ================================================================
-app.get('/api/config', async (req, res) => {
+app.get('/api/config', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const u = await User.findById(req.user._id).select('config').lean();
     return res.json({ config: u?.config || {} });
   } catch (err) {
@@ -844,9 +847,8 @@ app.get('/api/config', async (req, res) => {
   }
 });
 
-app.post('/api/config', async (req, res) => {
+app.post('/api/config', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
 
     const { language, dateFormat } = req.body;
 
@@ -881,40 +883,49 @@ passport.use(new GoogleStrategy({
     const email = profile.emails?.[0]?.value;
     if (!email) return done(new Error('Google não retornou e-mail.'), null);
 
+    // Usuário já existe? (por googleId OU por email)
     let usuario = await User.findOne({ $or: [{ googleId: profile.id }, { email }] });
 
-    if (!usuario) {
-      // Usuário novo pelo Google — precisa completar perfil
-      const baseUsuario = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
-      const sufixo = Math.random().toString(36).slice(2, 6);
-      usuario = new User({
-        nome: profile.displayName || baseUsuario,
-        email,
-        googleId: profile.id,
-        usuario: `${baseUsuario}_${sufixo}`,
-        precisaCompletarPerfil: true
-      });
-      await usuario.save();
-            // 📧 Boas-vindas só pra quem é novo pelo Google
-      enviarEmailBoasVindas(usuario).catch(err =>
-        console.error('Falha ao enviar boas-vindas (Google):', err.message)
-      );
-    } else if (!usuario.googleId) {
-      // Usuário já existia (email cadastrado antes) — vincula o googleId
-      usuario.googleId = profile.id;
-      await usuario.save();
+    if (usuario) {
+      // Já existe → vincula googleId se ainda não tinha e faz login
+      if (!usuario.googleId) {
+        usuario.googleId = profile.id;
+        await usuario.save();
+      }
+      return done(null, usuario);
     }
 
-    return done(null, usuario);
+    // 🆕 NÃO cria no banco ainda — só guarda os dados na sessão.
+    // O usuário só é criado em /api/completar, DEPOIS de aceitar os termos.
+    return done(null, {
+      _id: null,
+      googleId: profile.id,
+      email,
+      nome: profile.displayName || email.split('@')[0],
+      novoViaGoogle: true
+    });
   } catch (err) {
     return done(err, null);
   }
 }));
 
-passport.serializeUser((usuario, done) => done(null, usuario._id.toString()));
-passport.deserializeUser(async (id, done) => {
-  try { done(null, await User.findById(id)); }
-  catch (err) { done(err, null); }
+passport.serializeUser((usuario, done) => {
+  // Usuário pendente do Google (sem _id) — serializa os dados direto
+  if (!usuario._id) {
+    return done(null, { pendente: true, dados: usuario });
+  }
+  done(null, { id: usuario._id.toString() });
+});
+
+passport.deserializeUser(async (obj, done) => {
+  try {
+    if (obj && obj.pendente) {
+      return done(null, obj.dados);
+    }
+    done(null, await User.findById(obj.id));
+  } catch (err) {
+    done(err, null);
+  }
 });
 
 app.get('/api/google',
@@ -931,24 +942,159 @@ app.get('/api/google/callback',
       }
       const u = req.user;
 
-      // Usuário novo pelo Google vai pra completar.html
-      if (u.precisaCompletarPerfil) {
+      // 🆕 Usuário novo do Google → precisa aceitar termos em completar.html
+      if (u && u.novoViaGoogle) {
         return res.redirect('/completar.html');
       }
+
+      // Usuário que já existia mas ainda não completou o perfil
+      if (u && u.precisaCompletarPerfil) {
+        return res.redirect('/completar.html');
+      }
+
       return res.redirect('/perfil');
     });
   }
 );
 // ---------- API: COMPLETAR CADASTRO ----------
 app.post('/api/completar', async (req, res) => {
-  const { telefone, nascimento, senha, canalVerificacao } = req.body;
+  const {
+    telefone, nascimento, senha, canalVerificacao,
+    usuario: username,
+    termos, regras, marketing,
+    perguntaSenha
+  } = req.body;
+
   try {
     if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado!' });
 
+    // ✅ TERMOS OBRIGATÓRIOS (para qualquer tipo de cadastro)
+    if (!termos || !regras) {
+      return res.status(400).json({
+        mensagem: 'Você precisa aceitar os Termos e as Regras da comunidade.'
+      });
+    }
+
+    // ---- CASO 1: usuário novo via Google (ainda não existe no banco) ----
+    if (req.user.novoViaGoogle) {
+      const { googleId, email, nome } = req.user;
+
+      if (!nascimento) {
+        return res.status(400).json({ mensagem: 'Data de nascimento é obrigatória.' });
+      }
+
+      const dataNasc = new Date(nascimento);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+
+      if (isNaN(dataNasc.getTime())) {
+        return res.status(400).json({ mensagem: 'Data de nascimento inválida.' });
+      }
+      if (dataNasc > hoje) {
+        return res.status(400).json({ mensagem: 'Data de nascimento não pode ser no futuro.' });
+      }
+
+      let idade = hoje.getFullYear() - dataNasc.getFullYear();
+      const mesAtual = hoje.getMonth();
+      const mesNasc = dataNasc.getMonth();
+      if (mesAtual < mesNasc || (mesAtual === mesNasc && hoje.getDate() < dataNasc.getDate())) {
+        idade--;
+      }
+      if (idade < 12) {
+        return res.status(403).json({ mensagem: 'Você precisa ter pelo menos 12 anos para se cadastrar.' });
+      }
+
+      // Username (verifica duplicidade se enviado)
+      if (username && username.trim()) {
+        const existe = await User.findOne({ usuario: username.trim() });
+        if (existe) {
+          return res.status(400).json({ mensagem: 'Este nome de usuário já está em uso.' });
+        }
+      }
+
+      // Canal de verificação
+      const canal = canalVerificacao === 'sms' ? 'sms' : 'email';
+      if (canal === 'sms' && !telefone) {
+        return res.status(400).json({ mensagem: 'Telefone é obrigatório para verificação por SMS.' });
+      }
+
+      // Username padrão se não enviado
+      const baseUsuario = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const sufixo = Math.random().toString(36).slice(2, 6);
+      const usernameFinal = (username && username.trim()) ? username.trim() : `${baseUsuario}_${sufixo}`;
+
+      // Valida senha se enviada
+      if (senha) {
+        if (senha.length < 6) {
+          return res.status(400).json({ mensagem: 'A senha deve ter ao menos 6 caracteres.' });
+        }
+      }
+
+      // ✅ Cria o usuário APENAS AGORA, com termos aceitos
+      const novo = new User({
+        nome,
+        email,
+        googleId,
+        usuario: usernameFinal,
+        telefone: telefone ? normalizarTelefone(telefone) : undefined,
+        nascimento: dataNasc,
+        perguntaSenha: perguntaSenha || '',
+        termos: true,
+        regras: true,
+        marketing: !!marketing,
+        contaAtiva: false,
+        canalVerificacao: canal,
+        precisaCompletarPerfil: false
+      });
+
+      if (senha) novo.senha = senha;
+
+      await novo.save();
+
+      // 📨 Envia código de verificação
+      let enviado = false;
+      try {
+        const codigo = gerarCodigo5();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        await PhoneVerification.deleteMany({ userId: novo._id });
+        await PhoneVerification.create({
+          userId: novo._id,
+          telefone: telefone ? normalizarTelefone(telefone) : '',
+          codigo,
+          expiresAt
+        });
+
+        if (canal === 'email') {
+          await enviarEmailCodigo(novo.email, codigo);
+          console.log(`[VERIFICACAO-EMAIL] Código para ${novo.email}: ${codigo}`);
+        } else {
+          await enviarSMSCodigo(normalizarTelefone(telefone), codigo);
+        }
+        enviado = true;
+      } catch (envioErr) {
+        console.error('Falha ao enviar código em /api/completar (Google):', envioErr.message);
+      }
+
+      // Faz login do usuário recém-criado
+      return req.login(novo, (err) => {
+        if (err) return res.status(500).json({ mensagem: 'Erro ao iniciar sessão.' });
+        req.session.save(() => {
+          return res.json({
+            mensagem: canal === 'email'
+              ? 'Cadastro completado! Verifique seu e-mail para ativar a conta.'
+              : 'Cadastro completado! Verifique seu telefone para ativar a conta.',
+            usuario: sanitize(novo),
+            precisaValidarTelefone: enviado,
+            canalVerificacao: canal
+          });
+        });
+      });
+    }
+
+    // ---- CASO 2: usuário já existe no banco (precisaCompletarPerfil: true) ----
     const usuario = await User.findById(req.user._id);
     if (!usuario) return res.status(404).json({ mensagem: 'Usuário não encontrado!' });
 
-    // Validação de data de nascimento
     if (nascimento) {
       const dataNasc = new Date(nascimento);
       const hoje = new Date();
@@ -967,13 +1113,12 @@ app.post('/api/completar', async (req, res) => {
       if (mesAtual < mesNasc || (mesAtual === mesNasc && hoje.getDate() < dataNasc.getDate())) {
         idade--;
       }
-
       if (idade < 12) {
         return res.status(403).json({ mensagem: 'Você precisa ter pelo menos 12 anos para se cadastrar.' });
       }
 
       usuario.nascimento = dataNasc;
-    }    if (nascimento) usuario.nascimento = new Date(nascimento);
+    }
 
     if (senha) {
       if (senha.length < 6) {
@@ -982,23 +1127,24 @@ app.post('/api/completar', async (req, res) => {
       usuario.senha = senha;
     }
 
-    // Validação do canal escolhido
     const canal = canalVerificacao === 'sms' ? 'sms' : 'email';
     if (canal === 'sms' && !telefone) {
       return res.status(400).json({ mensagem: 'Telefone é obrigatório para verificação por SMS.' });
     }
 
+    // ✅ Aceita os termos
+    usuario.termos = true;
+    usuario.regras = true;
+    usuario.marketing = !!marketing;
     usuario.precisaCompletarPerfil = false;
     usuario.contaAtiva = false;
     usuario.canalVerificacao = canal;
     await usuario.save();
 
-    // 📨 Envia código de verificação
     let enviado = false;
     try {
       const codigo = gerarCodigo5();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
       await PhoneVerification.deleteMany({ userId: usuario._id });
       await PhoneVerification.create({
         userId: usuario._id,
@@ -1011,10 +1157,9 @@ app.post('/api/completar', async (req, res) => {
         await enviarEmailCodigo(usuario.email, codigo);
         console.log(`[VERIFICACAO-EMAIL] Código para ${usuario.email}: ${codigo}`);
       } else {
-        const e164 = normalizarTelefone(telefone);
-        usuario.telefone = e164;
+        usuario.telefone = normalizarTelefone(telefone);
         await usuario.save();
-        await enviarSMSCodigo(e164, codigo);
+        await enviarSMSCodigo(usuario.telefone, codigo);
       }
       enviado = true;
     } catch (envioErr) {
@@ -1368,9 +1513,8 @@ app.get('/api/book/:volumeId/rating', async (req, res) => {
   }
 });
 
-app.post('/api/book/:volumeId/rating', async (req, res) => {
+app.post('/api/book/:volumeId/rating', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { volumeId } = req.params;
     const { value } = req.body;
 
@@ -1471,9 +1615,8 @@ app.get('/api/book/:volumeId/comments', async (req, res) => {
   }
 });
 
-app.post('/api/book/:volumeId/comment', async (req, res) => {
+app.post('/api/book/:volumeId/comment', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { volumeId } = req.params;
     const { text } = req.body;
     if (!text || !text.trim()) return res.status(400).json({ mensagem: 'Comentário vazio.' });
@@ -1488,9 +1631,8 @@ app.post('/api/book/:volumeId/comment', async (req, res) => {
   }
 });
 
-app.delete('/api/book/:volumeId/comment/:commentId', async (req, res) => {
+app.delete('/api/book/:volumeId/comment/:commentId', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { commentId } = req.params;
     const comment = await Comment.findById(commentId);
     if (!comment) return res.status(404).json({ mensagem: 'Comentário não encontrado.' });
@@ -1507,9 +1649,8 @@ app.delete('/api/book/:volumeId/comment/:commentId', async (req, res) => {
 // ================================================================
 // ============ ROTAS: SHELF (usando ShelfItem) ===================
 // ================================================================
-app.get('/api/shelf', async (req, res) => {
+app.get('/api/shelf', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const itens = await ShelfItem.find({ userId: req.user._id }).sort({ addedAt: -1 }).lean();
     const livros = itens.map(i => ({
       volumeId: i.volumeId,
@@ -1536,9 +1677,8 @@ app.get('/api/shelf', async (req, res) => {
   }
 });
 
-app.get('/api/shelf/item/:volumeId', async (req, res) => {
+app.get('/api/shelf/item/:volumeId', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { volumeId } = req.params;
     const item = await ShelfItem.findOne({ userId: req.user._id, volumeId }).lean();
     if (!item) return res.status(404).json({ mensagem: 'Item não encontrado na estante.' });
@@ -1554,9 +1694,8 @@ app.get('/api/shelf/item/:volumeId', async (req, res) => {
 // Aceita: volumeId, status, reaction (string), reactions (array),
 //         currentPage, chapter | currentChapter, userRating
 // ================================================================
-app.post('/api/shelf/add', async (req, res) => {
+app.post('/api/shelf/add', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
 
     const {
       volumeId,
@@ -1674,9 +1813,8 @@ app.post('/api/shelf/add', async (req, res) => {
 // ================================================================
 // ============ SHELF: UPDATE (edição completa) ===================
 // ================================================================
-app.post('/api/shelf/update', async (req, res) => {
+app.post('/api/shelf/update', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { volumeId, status, currentPage, currentChapter, reactions, userRating } = req.body;
     if (!volumeId) return res.status(400).json({ mensagem: 'volumeId obrigatório.' });
     if (!status) return res.status(400).json({ mensagem: 'Status é obrigatório.' });
@@ -1714,9 +1852,8 @@ app.post('/api/shelf/update', async (req, res) => {
   }
 });
 
-app.post('/api/shelf/remove', async (req, res) => {
+app.post('/api/shelf/remove', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
     const { volumeId } = req.body;
     if (!volumeId) return res.status(400).json({ mensagem: 'volumeId obrigatório.' });
     const r = await ShelfItem.deleteOne({ userId: req.user._id, volumeId });
@@ -1731,9 +1868,8 @@ app.post('/api/shelf/remove', async (req, res) => {
 // ================================================================
 // ============ ADICIONAR LIVRO MANUALMENTE =======================
 // ================================================================
-app.post('/api/shelf/add-manual', async (req, res) => {
+app.post('/api/shelf/add-manual', requireUser, async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ mensagem: 'Usuário não autenticado.' });
 
     const {
       isbn,

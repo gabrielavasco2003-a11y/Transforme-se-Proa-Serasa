@@ -140,9 +140,17 @@ window.validarCodigoTelefone = async function () {
       return alert(data.mensagem || 'Código inválido.');
     }
 
+      // Salva usuário atualizado localmente (caso outras páginas dependam)
+    if (data && data.usuario) {
+      localStorage.setItem('usuarioLogado', JSON.stringify(data.usuario));
+      if (window.OfflineDB) {
+        try { await window.OfflineDB.salvarUsuario(data.usuario); } catch (_) {}
+      }
+    }
+
     sessionStorage.removeItem('validarTelefone');
-    alert('Telefone verificado com sucesso!');
-    location.href = 'perfil.html';
+    alert('Conta ativada com sucesso!');
+    location.href = 'perfil';
   } catch (err) {
     console.error(err);
     if (btn) { btn.disabled = false; btn.textContent = 'Confirmar'; }
@@ -180,14 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Função de reenvio (declarada antes para poder se chamar recursivamente)
     const reenviarCodigo = async () => {
-      const telefone = sessionStorage.getItem('validarTelefone');
-      if (!telefone) {
-        alert('Sessão expirada. Informe o telefone novamente.');
-        return location.href = 'validar-telefone.html';
-      }
+      // Pode vir de SMS (tem telefone salvo) ou e-mail (não tem — backend usa req.user)
+      const telefone = sessionStorage.getItem('validarTelefone') || '';
 
       const { ok, data } = await postJSON('/api/validar-telefone/enviar', { telefone });
-
       if (ok) {
         alert('Novo código enviado!');
         pegarInputsCodigo().forEach(i => i.value = '');

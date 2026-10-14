@@ -104,19 +104,57 @@
 
     <!-- Lado direito -->
     <div class="completar-right">
-      <form id="completarForm">
+      <form id="completarForm" novalidate>
         <h3>Complete seu cadastro</h3>
 
+        <label for="usuario">Nome de usuário (opcional):</label>
+        <input type="text" id="usuario" name="usuario" placeholder="Deixe em branco para gerar automático">
+
         <label for="telefone">Telefone:</label>
-        <input type="text" id="telefone" name="telefone" required>
+        <input type="text" id="telefone" name="telefone" placeholder="(11) 91234-5678">
 
         <label for="nascimento">Data de nascimento:</label>
         <input type="date" id="nascimento" name="nascimento" required>
 
         <label for="senha">Defina uma senha:</label>
-        <input type="password" id="senha" name="senha" required>
+        <input type="password" id="senha" name="senha" minlength="6" required>
 
-        <button type="submit">Salvar</button>
+        <fieldset class="canal-verificacao">
+          <legend>Como você quer receber o código de ativação?</legend>
+
+          <label class="radio-option">
+            <input type="radio" name="canalVerificacao" value="email" checked>
+            E-mail
+          </label>
+
+          <label class="radio-option">
+            <input type="radio" name="canalVerificacao" value="sms">
+            SMS (requer telefone)
+          </label>
+        </fieldset>
+
+        <fieldset class="termos-box">
+          <legend>Termos e Regras</legend>
+
+          <label class="check-option">
+            <input type="checkbox" id="termos" name="termos" required>
+            Eu aceito os <a href="/termos-servicos.html" target="_blank" rel="noopener">Termos de Serviço</a>.
+          </label>
+
+          <label class="check-option">
+            <input type="checkbox" id="regras" name="regras" required>
+            Eu aceito as <a href="/termos-servicos.html" target="_blank" rel="noopener">Regras da Comunidade</a>.
+          </label>
+
+          <label class="check-option">
+            <input type="checkbox" id="marketing" name="marketing">
+            Aceito receber novidades e comunicações por e-mail.
+          </label>
+        </fieldset>
+
+        <p id="completar-erro" class="erro hidden" role="alert" hidden></p>
+
+        <button type="submit" id="btn-salvar">Salvar</button>
       </form>
     </div>
 
