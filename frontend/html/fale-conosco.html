@@ -82,22 +82,153 @@
 </header>
 
 <main class="institucional">
-    <section class="institucional-card">
-        <h1>Fale conosco</h1>
+  <section class="institucional-card">
+    <h1>Fale Conosco</h1>
+    <p class="institucional-data">💬 Respondemos em até 48h úteis</p>
 
-        <!-- ====================================================== -->
-        <!-- ESCREVA O CONTEÚDO AQUI -->
-        <!-- ====================================================== -->
+    <p>Tem uma dúvida, sugestão, elogio ou quer propor uma parceria? A comunidade <strong>Spoiler Esperado</strong> adora ouvir seus leitores! 📚</p>
 
-        <p>Conteúdo em construção.</p>
+    <div class="institucional-destaque">
+       Antes de escrever, dá uma olhada nas <a href="/politica-privacidade.html">Política de Privacidade</a> e nos <a href="/termos-servicos.html">Termos e Serviços</a> — muitas dúvidas já estão respondidas por lá!
+    </div>
 
-        <!-- ====================================================== -->
+    <!-- ============================================== -->
+    <!-- SUPORTE TÉCNICO                                -->
+    <!-- ============================================== -->
+    <h2> Suporte Técnico</h2>
 
-        <div class="institucional-actions">
-            <a href="/index.html" class="btn-voltar">← Voltar para o início</a>
+    <div class="suporte-box">
+      <h3> Problemas técnicos gerais <span class="badge">Prioridade</span></h3>
+      <p>Problemas de login, cadastro, erro ao adicionar livros, páginas que não carregam, etc. Entre em contato pelo e-mail de suporte:</p>
+
+      <div class="canais-contato">
+        <a class="canal suporte" href="mailto:suporte.spoileresperado@gmail.com?subject=%5BSUPORTE%20T%C3%89CNICO%5D%20Descri%C3%A7%C3%A3o%20do%20problema">
+          <span class="info">
+            <strong>E-mail de Suporte</strong>
+            <small>suporte.spoileresperado@gmail.com</small>
+          </span>
+        </a>
+      </div>
+
+      <h3> O que incluir na sua mensagem</h3>
+      <ul>
+        <li> <strong>Descrição do problema:</strong> o que você tentou fazer e o que aconteceu.</li>
+        <li> <strong>Dispositivo e navegador:</strong> ex. "Celular Android, Chrome".</li>
+        <li> <strong>Print da tela:</strong> se possível, uma captura ajuda demais.</li>
+        <li> <strong>Página onde ocorreu:</strong> ex. "ao clicar em Adicionar Livro".</li>
+        <li> <strong>Horário aproximado:</strong> quando o erro aconteceu.</li>
+      </ul>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- REPORTE DE BUGS                                -->
+    <!-- ============================================== -->
+    <h2>🐛 Reporte de Bugs</h2>
+
+    <div class="bugs-box">
+      <h3> Encontrou um bug? <span class="badge-bug">Urgente</span></h3>
+      <p>Bugs são tratados como <strong>prioridade máxima</strong>. Preencha o formulário abaixo e ele abrirá automaticamente seu cliente de e-mail com todas as informações organizadas — é só clicar em <strong>"Enviar"</strong>.</p>
+
+      <form class="bug-form" id="bug-form">
+        <div>
+          <label for="bug-nome">Seu nome ou apelido *</label>
+          <input type="text" id="bug-nome" required placeholder="Ex.: Maria S.">
         </div>
-    </section>
+
+        <div>
+          <label for="bug-email">Seu e-mail para retorno *</label>
+          <input type="email" id="bug-email" required placeholder="voce@email.com">
+        </div>
+
+        <div>
+          <label for="bug-pagina">Onde aconteceu? *</label>
+          <select id="bug-pagina" required>
+            <option value="">Selecione uma opção…</option>
+            <option>Página inicial (index)</option>
+            <option>Login / Cadastro</option>
+            <option>Adicionar livro</option>
+            <option>Minha Estante</option>
+            <option>Meu Perfil / Editar Perfil</option>
+            <option>Conquistas</option>
+            <option>Configurações</option>
+            <option>Busca</option>
+            <option>Fale conosco</option>
+            <option>Outro (descrever abaixo)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="bug-dispositivo">Dispositivo e navegador *</label>
+          <input type="text" id="bug-dispositivo" required placeholder="Ex.: Android 13, Chrome 120">
+        </div>
+
+        <div>
+          <label for="bug-descricao">Descreva o bug *</label>
+          <textarea id="bug-descricao" required placeholder="O que você fez, o que esperava que acontecesse e o que aconteceu de fato…"></textarea>
+        </div>
+
+        <div>
+          <label for="bug-passos">Passos para reproduzir (opcional, mas ajuda MUITO)</label>
+          <textarea id="bug-passos" placeholder="1. Abri a página X&#10;2. Cliquei no botão Y&#10;3. Apareceu o erro Z"></textarea>
+        </div>
+
+        <button type="submit">🐛 Enviar reporte por e-mail</button>
+      </form>
+    </div>
+
+    <h2> Outros canais</h2>
+    <div class="canais-contato">
+
+      <a class="canal" href="mailto:spoileresperado@gmail.com">
+        <span class="info">
+          <strong>E-mail geral</strong>
+          <small>spoileresperado@gmail.com</small>
+        </span>
+      </a>
+
+      <a class="canal" href="https://instagram.com/spoileresperado" target="_blank" rel="noopener">
+        <span class="info">
+          <strong>Instagram</strong>
+          <small>@spoileresperado</small>
+        </span>
+      </a>
+
+      <a class="canal" href="https://www.threads.net/@spoileresperado" target="_blank" rel="noopener">
+        <span class="info">
+          <strong>Threads</strong>
+          <small>@spoileresperado</small>
+        </span>
+      </a>
+
+      <a class="canal" href="https://spoiler-esperado.onrender.com" target="_blank" rel="noopener">
+        <span class="info">
+          <strong>Site oficial</strong>
+          <small>spoiler-esperado.onrender.com</small>
+        </span>
+      </a>
+
+    </div>
+
+    <h2> Prazo de resposta</h2>
+    <ul>
+      <li> <strong>Bugs:</strong> até <strong>30 dias úteis</strong> (prioridade máxima)</li>
+      <li> <strong>Suporte técnico geral:</strong> até <strong>24–48h úteis</strong></li>
+      <li> <strong>E-mails gerais:</strong> até <strong>48h úteis</strong></li>
+      <li> <strong>Instagram/Threads:</strong> até <strong>72h</strong></li>
+    </ul>
+
+    <h2> Parcerias e imprensa</h2>
+    <p>É autor, editora, criador de conteúdo ou jornalista e quer falar com a gente? Manda um e-mail com o assunto <strong>"Parceria"</strong> ou <strong>"Imprensa"</strong> que encaminhamos para a pessoa certa.</p>
+
+    <h2> Privacidade das suas mensagens</h2>
+    <p>Todas as mensagens que você envia são tratadas com confidencialidade, conforme nossa <a href="/politica-privacidade.html">Política de Privacidade</a> e a LGPD. Nunca compartilhamos seus dados com terceiros sem seu consentimento.</p>
+
+    <div class="institucional-actions">
+      <a href="/index.html" class="btn-voltar">← Voltar para o início</a>
+    </div>
+  </section>
 </main>
+
 
 <footer>
     <div id="logo-footer">
